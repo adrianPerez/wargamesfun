@@ -6,1268 +6,561 @@
 <title>WOPR - Global Thermonuclear War</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
-    background: #000;
-    color: #33ff33;
+    background: #000008;
+    color: #5599ff;
     font-family: 'Share Tech Mono', 'Courier New', monospace;
     overflow: hidden;
-    height: 100vh;
-    width: 100vw;
+    height: 100vh; width: 100vw;
   }
-
-  #scanline-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 1000;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.15) 0px,
-      rgba(0,0,0,0.15) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+  #scanlines {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 1000;
+    background: repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px,
+      transparent 1px, transparent 3px);
   }
-
-  #crt-glow {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 999;
-    box-shadow: inset 0 0 120px rgba(0,0,0,0.7);
-  }
-
-  #header {
-    text-align: center;
-    padding: 8px 0 4px 0;
-    border-bottom: 1px solid #1a5c1a;
-    position: relative;
-    z-index: 10;
-  }
-
-  #header h1 {
-    font-size: 1.1em;
-    letter-spacing: 6px;
-    color: #33ff33;
-    text-shadow: 0 0 10px #33ff33, 0 0 20px #33ff33;
-  }
-
-  #header .subtitle {
-    font-size: 0.65em;
-    color: #1a8c1a;
-    letter-spacing: 3px;
-    margin-top: 2px;
-  }
-
-  #controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid #1a5c1a;
-    position: relative;
-    z-index: 10;
-  }
-
-  .defcon-btn {
-    padding: 4px 14px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.75em;
-    border: 1px solid #333;
-    background: #0a0a0a;
-    color: #666;
-    cursor: pointer;
-    letter-spacing: 2px;
-    transition: all 0.3s;
-  }
-
-  .defcon-btn:hover {
-    border-color: #555;
-    color: #999;
-  }
-
-  .defcon-btn.active {
-    border-width: 2px;
-  }
-
-  .defcon-5.active { border-color: #3366ff; color: #3366ff; background: #0a0a1a; text-shadow: 0 0 8px #3366ff; }
-  .defcon-4.active { border-color: #33cc33; color: #33cc33; background: #0a1a0a; text-shadow: 0 0 8px #33cc33; }
-  .defcon-3.active { border-color: #cccc00; color: #cccc00; background: #1a1a0a; text-shadow: 0 0 8px #cccc00; }
-  .defcon-2.active { border-color: #ff8800; color: #ff8800; background: #1a0f0a; text-shadow: 0 0 8px #ff8800; }
-  .defcon-1.active { border-color: #ff2222; color: #ff2222; background: #1a0a0a; text-shadow: 0 0 8px #ff2222; animation: pulse-btn 0.8s infinite; }
-
-  @keyframes pulse-btn {
-    0%, 100% { box-shadow: 0 0 5px rgba(255,34,34,0.3); }
-    50% { box-shadow: 0 0 15px rgba(255,34,34,0.6); }
-  }
-
-  #defcon-display {
-    font-size: 0.8em;
-    letter-spacing: 3px;
-    margin-right: 10px;
-  }
-
-  #status-bar {
-    display: flex;
-    justify-content: space-between;
-    padding: 3px 15px;
-    font-size: 0.6em;
-    color: #1a8c1a;
-    border-bottom: 1px solid #1a5c1a;
-    position: relative;
-    z-index: 10;
-  }
-
-  #displays {
+  #main-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 0;
-    height: calc(100vh - 95px);
-    position: relative;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr auto 1fr;
+    height: 100vh; gap: 5px; padding: 5px;
+    background: #000008;
   }
-
-  .display-panel {
-    position: relative;
-    border: 1px solid #1a3a1a;
-    overflow: hidden;
+  .panel {
+    position: relative; overflow: hidden;
+    background: #000010;
+    border: 2px solid rgba(140,170,220,0.4);
+    border-radius: 5px;
+    box-shadow: 0 0 12px rgba(60,100,180,0.15),
+                inset 0 0 40px rgba(0,5,20,0.6);
   }
-
-  .display-panel .panel-title {
-    position: absolute;
-    top: 4px;
-    left: 8px;
-    font-size: 0.55em;
-    color: #1a8c1a;
-    letter-spacing: 2px;
-    z-index: 5;
-    text-shadow: 0 0 5px rgba(26,140,26,0.5);
+  .panel canvas { width: 100%; height: 100%; display: block; }
+  .panel-label {
+    position: absolute; top: 5px; left: 8px;
+    font-size: 0.5em; color: #5599ff; letter-spacing: 2px;
+    z-index: 5; text-shadow: 0 0 6px rgba(85,153,255,0.5);
+    line-height: 1.4;
   }
-
-  .display-panel canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
+  .panel-label .sub { color: #3366aa; }
+  #status-bar {
+    grid-column: 1 / 4;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 2px 10px;
+    background: #000010;
+    border-top: 1px solid rgba(140,170,220,0.25);
+    border-bottom: 1px solid rgba(140,170,220,0.25);
+    min-height: 26px; flex-wrap: wrap;
   }
-
-  #display-main {
-    grid-column: 1 / 3;
-    grid-row: 1 / 2;
+  .sbl { color: #336699; font-size: 0.5em; letter-spacing: 1px; }
+  .sbk { width: 16px; height: 8px; display: inline-block; vertical-align: middle; }
+  .defcon-btn {
+    padding: 1px 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.55em; border: 1px solid #224;
+    background: #060610; color: #446;
+    cursor: pointer; letter-spacing: 1px;
   }
-
-  #display-left {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
+  .defcon-btn:hover { border-color: #558; color: #88aacc; }
+  .defcon-btn.active {
+    border-color: #5599ff; color: #5599ff;
+    background: #0a0a20; text-shadow: 0 0 6px #5599ff;
   }
-
-  #display-right {
-    grid-column: 2 / 3;
-    grid-row: 2 / 3;
+  .defcon-1.active {
+    border-color: #ff4444; color: #ff4444;
+    text-shadow: 0 0 6px #ff4444;
+    animation: pd1 0.8s infinite;
   }
-
+  .defcon-2.active { border-color: #ff8844; color: #ff8844; text-shadow: 0 0 6px #ff8844; }
+  @keyframes pd1 {
+    0%,100% { box-shadow: 0 0 4px rgba(255,68,68,0.3); }
+    50% { box-shadow: 0 0 12px rgba(255,68,68,0.6); }
+  }
+  .cg { display: flex; align-items: center; gap: 3px; font-size: 0.55em; margin-left: 6px; }
+  .cg .cl { color: #336699; font-size: 0.85em; }
+  .cg .cv { color: #77bbff; letter-spacing: 1px; }
   #event-log {
-    position: absolute;
-    bottom: 5px;
-    right: 8px;
-    font-size: 0.5em;
-    color: #33ff33;
-    text-align: right;
-    z-index: 5;
-    text-shadow: 0 0 5px rgba(51,255,51,0.3);
-    max-width: 45%;
+    position: absolute; bottom: 4px; left: 8px;
+    font-size: 0.42em; color: #5599ff; z-index: 5;
+    text-shadow: 0 0 4px rgba(85,153,255,0.3);
+    max-width: 55%;
   }
-
-  #event-log div {
-    opacity: 0.9;
-    margin-bottom: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  #event-log div { margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
-
-<div id="scanline-overlay"></div>
-<div id="crt-glow"></div>
-
-<div id="header">
-  <h1>WOPR</h1>
-  <div class="subtitle">WAR OPERATION PLAN RESPONSE</div>
-</div>
-
-<div id="controls">
-  <span id="defcon-display">DEFCON 5</span>
-  <button class="defcon-btn defcon-5 active" onclick="setDefcon(5)">5</button>
-  <button class="defcon-btn defcon-4" onclick="setDefcon(4)">4</button>
-  <button class="defcon-btn defcon-3" onclick="setDefcon(3)">3</button>
-  <button class="defcon-btn defcon-2" onclick="setDefcon(2)">2</button>
-  <button class="defcon-btn defcon-1" onclick="setDefcon(1)">1</button>
-</div>
-
-<div id="status-bar">
-  <span id="clock"></span>
-  <span id="missile-count">TRAJECTORIES: 0</span>
-  <span id="strike-count">IMPACTS: 0</span>
-  <span>NORAD COMMAND CENTER</span>
-</div>
-
-<div id="displays">
-  <div class="display-panel" id="display-main">
-    <span class="panel-title">STRATEGIC DEFENSE - NORTHERN HEMISPHERE</span>
-    <canvas id="canvas-main"></canvas>
-    <div id="event-log"></div>
+<div id="scanlines"></div>
+<div id="main-grid">
+  <div class="panel"><span class="panel-label">ALASKAN AIR COMMAND<br><span class="sub">HEADQUARTERS ELMENDORF AFB</span></span><canvas id="c0"></canvas></div>
+  <div class="panel"><span class="panel-label">UNITED STATES CONTINENTAL</span><canvas id="c1"></canvas></div>
+  <div class="panel"><span class="panel-label">SOVIET FIRST STRIKE</span><canvas id="c2"></canvas></div>
+  <div id="status-bar">
+    <span class="sbl">DEFCON</span>
+    <button class="defcon-btn defcon-5 active" onclick="setDefcon(5)">5</button>
+    <button class="defcon-btn defcon-4" onclick="setDefcon(4)">4</button>
+    <button class="defcon-btn defcon-3" onclick="setDefcon(3)">3</button>
+    <button class="defcon-btn defcon-2" onclick="setDefcon(2)">2</button>
+    <button class="defcon-btn defcon-1" onclick="setDefcon(1)">1</button>
+    <span class="sbl" style="margin-left:8px">SINGLE</span><span class="sbk" style="background:#22cc44"></span>
+    <span class="sbl">MULTIPLE</span><span class="sbk" style="background:#cc2244"></span>
+    <span class="sbl">SLBM</span><span class="sbk" style="background:#2244cc"></span>
+    <span class="sbl">AIR</span><span class="sbk" style="background:#cccc22"></span>
+    <span class="sbl" style="margin-left:6px">CLEAR</span><span class="sbk" style="background:#224488"></span>
+    <span class="sbl">TABLE</span><span class="sbk" style="background:#224488"></span>
+    <span class="sbl">PAUSE</span><span class="sbk" style="background:#224488"></span>
+    <div class="cg"><span class="cl">DSL</span><span class="cv" id="ct0">3252</span></div>
+    <div class="cg"><span class="cl">DEL</span><span class="cv" id="ct1">3416</span></div>
+    <div class="cg"><span class="cl">PAC</span><span class="cv" id="ct2">5417</span></div>
+    <div class="cg"><span class="cl">ATL</span><span class="cv" id="ct3">7671</span></div>
+    <div class="cg"><span class="cl">TRAJ</span><span class="cv" id="ct4">0</span></div>
+    <div class="cg"><span class="cl">IMPACT</span><span class="cv" id="ct5" style="color:#ff6688">0</span></div>
   </div>
-  <div class="display-panel" id="display-left">
-    <span class="panel-title">THREAT ASSESSMENT MATRIX</span>
-    <canvas id="canvas-left"></canvas>
-  </div>
-  <div class="display-panel" id="display-right">
-    <span class="panel-title">STRIKE PROBABILITY ANALYSIS</span>
-    <canvas id="canvas-right"></canvas>
-  </div>
+  <div class="panel"><span class="panel-label">SAC FORCE STATUS<br><span class="sub">STRATEGIC AIR COMMAND</span></span><canvas id="c3"></canvas></div>
+  <div class="panel"><span class="panel-label">NORTH ATLANTIC DEFENSE<br><span class="sub">ADIZ SECTORS</span></span><canvas id="c4"></canvas><div id="event-log"></div></div>
+  <div class="panel"><span class="panel-label">GLOBAL STRATEGIC</span><canvas id="c5"></canvas></div>
 </div>
-
 <script>
 // ============================================================
 // WOPR GLOBAL THERMONUCLEAR WAR SIMULATOR
 // ============================================================
+const BLUE='#4488ff',BLUE_B='#77bbff',BLUE_D='#1a3366',RED='#ff3366',RED_D='#661133',WHITE='#ccddff',CYAN='#44ccff';
+let currentDefcon=5,missiles=[],impacts=[],totalMissiles=0,totalImpacts=0,
+    eventMessages=[],lastMissileTime=0,warStartTime=0,strikeData=[];
+const cvs=[0,1,2,3,4,5].map(i=>{const c=document.getElementById('c'+i);return{c,x:c.getContext('2d')};});
 
-let currentDefcon = 5;
-let missiles = [];
-let impacts = [];
-let totalMissiles = 0;
-let totalImpacts = 0;
-let eventMessages = [];
-let lastMissileTime = 0;
-let warStartTime = 0;
-let strikeData = [];
-let threatLevels = {};
+function geo(lon,lat){return[(lon+170)/370,(78-lat)/100];}
+function geoXY(lon,lat){const c=geo(lon,lat);return{x:c[0],y:c[1]};}
 
-// Canvas refs
-const canvasMain = document.getElementById('canvas-main');
-const canvasLeft = document.getElementById('canvas-left');
-const canvasRight = document.getElementById('canvas-right');
-const ctxMain = canvasMain.getContext('2d');
-const ctxLeft = canvasLeft.getContext('2d');
-const ctxRight = canvasRight.getContext('2d');
+// ── CONTINENT PATHS ──
+const continentPaths=[
+[[-168,54],[-165,55],[-162,56],[-160,57],[-158,58],[-156,58],[-154,59],[-152,59],[-150,61],[-149,61],[-148,60],[-146,60],[-144,60],[-141,60],[-139,59],[-137,58],[-136,57],[-134,56],[-132,55],[-130,54],[-130,52],[-128,51],[-127,50],[-126,49],[-125,48],[-124,47],[-124,46],[-124,44],[-124,42],[-124,41],[-123,39],[-122,38],[-121,36],[-120,35],[-119,34],[-118,34],[-117,33],[-117,32],[-116,31],[-114,30],[-113,29],[-112,27],[-111,25],[-110,24],[-109,23],[-107,21],[-105,20],[-104,19],[-103,19],[-101,18],[-99,17],[-97,16],[-96,16],[-95,16],[-94,16],[-93,16],[-92,17],[-91,18],[-90,19],[-90,20],[-89,21],[-88,20],[-87,19],[-87,18],[-88,17],[-88,16],[-89,17],[-90,18],[-90,19],[-91,20],[-91,22],[-92,24],[-93,26],[-94,28],[-95,29],[-96,29],[-97,28],[-97,27],[-97,26],[-96,26],[-97,27],[-97,29],[-96,30],[-95,30],[-94,30],[-93,29],[-92,29],[-91,29],[-90,29],[-89,29],[-89,30],[-88,30],[-87,30],[-86,30],[-85,30],[-84,30],[-84,29],[-83,28],[-82,27],[-82,26],[-81,25],[-80,25],[-80,26],[-80,27],[-80,29],[-81,30],[-81,31],[-80,32],[-79,33],[-78,34],[-77,35],[-76,36],[-76,37],[-77,38],[-76,39],[-75,39],[-74,40],[-74,41],[-73,41],[-72,41],[-71,42],[-70,42],[-70,43],[-69,44],[-68,44],[-67,45],[-67,44],[-66,44],[-65,44],[-64,44],[-63,45],[-62,46],[-61,46],[-60,47],[-59,47],[-57,47],[-56,47],[-55,47],[-54,47],[-53,48],[-53,49],[-55,50],[-56,50],[-57,51],[-56,52],[-55,53],[-56,53],[-58,54],[-59,55],[-60,56],[-60,57],[-60,58],[-62,58],[-64,60],[-66,61],[-68,62],[-70,63],[-73,63],[-76,64],[-79,64],[-80,63],[-82,62],[-84,62],[-85,63],[-86,64],[-87,65],[-88,66],[-87,67],[-85,68],[-84,69],[-85,70],[-87,71],[-90,71],[-95,72],[-100,72],[-105,72],[-110,72],[-115,72],[-120,71],[-125,71],[-130,70],[-135,70],[-140,69],[-145,70],[-150,71],[-155,71],[-160,71],[-163,70],[-165,69],[-167,67],[-166,65],[-164,63],[-164,61],[-165,59],[-166,57],[-168,55],[-168,54]],
+[[-52,60],[-49,60],[-46,60],[-44,60],[-43,61],[-42,63],[-43,65],[-45,66],[-47,68],[-50,69],[-53,70],[-55,72],[-55,74],[-53,76],[-50,78],[-46,78],[-42,78],[-38,77],[-33,76],[-28,75],[-24,74],[-21,73],[-19,71],[-19,70],[-21,69],[-24,68],[-27,67],[-30,66],[-33,65],[-36,64],[-39,63],[-42,62],[-44,61],[-47,60],[-50,60],[-52,60]],
+[[-5,50],[-6,50],[-5,51],[-5,52],[-4,53],[-3,53],[-3,54],[-4,54],[-5,55],[-5,56],[-6,57],[-5,58],[-4,58],[-3,58],[-2,57],[-1,57],[0,56],[1,55],[2,53],[1,52],[1,51],[0,51],[-1,50],[-3,50],[-5,50]],
+[[-10,52],[-10,53],[-10,54],[-9,54],[-8,55],[-7,55],[-6,54],[-6,53],[-7,52],[-8,52],[-9,52],[-10,52]],
+[[-24,64],[-22,64],[-20,64],[-18,65],[-16,66],[-14,66],[-13,65],[-14,64],[-16,64],[-18,63],[-20,63],[-22,64],[-24,64]],
+[[5,58],[5,59],[5,60],[5,61],[6,62],[8,63],[10,64],[12,65],[14,66],[16,67],[17,68],[19,69],[21,70],[24,71],[27,71],[29,70],[30,70],[30,69],[29,68],[28,66],[29,65],[30,64],[28,63],[26,62],[24,61],[22,60],[20,60],[18,59],[16,58],[14,57],[12,56],[11,56],[10,56],[9,57],[8,58],[5,58]],
+[[-10,37],[-9,38],[-9,39],[-9,40],[-8,41],[-9,42],[-9,43],[-8,44],[-5,44],[-4,44],[-2,44],[-1,43],[0,43],[2,43],[3,43],[4,43],[5,44],[4,46],[3,47],[2,48],[1,49],[-1,48],[-3,48],[-5,48],[-4,49],[-2,49],[0,50],[2,51],[3,51],[4,52],[5,53],[6,54],[7,54],[8,55],[9,54],[10,54],[10,55],[11,54],[12,54],[14,54]],
+[[-10,37],[-8,37],[-7,37],[-6,36],[-5,36],[-4,37],[-3,37],[-2,37],[-1,37],[0,38],[0,39],[0,40],[0,41],[-1,41],[-2,42],[-2,43]],
+[[7,44],[8,44],[9,44],[10,44],[11,44],[12,44],[13,44],[14,43],[14,42],[15,41],[15,40],[16,39],[16,38],[15,38],[16,38],[17,39],[18,40],[17,41],[16,42],[14,42],[13,43],[12,44],[12,45],[12,46],[13,46],[14,46]],
+[[13,38],[14,37],[15,37],[16,38],[15,38],[13,38]],
+[[20,40],[21,39],[22,38],[23,37],[24,36],[25,36],[26,37],[26,38],[26,40],[25,41],[24,41],[23,40],[22,40],[20,40]],
+[[26,42],[28,42],[30,42],[32,42],[34,42],[36,42],[36,41],[36,40],[36,38],[36,37],[36,36],[35,36],[34,36],[32,37],[30,36],[29,36],[28,37],[27,38],[26,39],[26,41],[26,42]],
+[[-6,35],[-5,36],[-3,35],[-2,35],[0,36],[2,37],[4,37],[6,37],[8,37],[9,37],[10,37],[11,33],[12,33],[13,33],[15,32],[18,33],[20,33],[22,32],[25,32],[28,31],[30,31],[32,31],[34,32],[35,31]],
+[[36,36],[37,35],[38,34],[40,32],[42,30],[43,28],[44,26],[45,24],[46,22],[48,20],[50,19],[52,19],[54,20],[55,22],[56,24],[56,25],[56,27],[54,27],[52,26],[50,26],[48,27],[46,28],[44,29],[43,30],[42,31],[40,33],[38,35],[36,36]],
+[[49,47],[50,46],[50,45],[51,44],[51,43],[52,42],[52,41],[52,40],[53,39],[54,38],[53,37],[52,37],[51,38],[50,39],[49,40],[49,41],[48,42],[48,43],[48,44],[49,45],[49,47]],
+[[28,42],[29,43],[30,44],[32,44],[34,44],[36,43],[38,43],[40,42],[41,42],[41,41],[40,41],[38,42],[36,42],[34,42],[32,42],[30,42],[28,42]],
+// Russia Arctic + Pacific (index 16)
+[[30,70],[33,69],[36,69],[40,68],[44,68],[48,68],[52,68],[56,68],[60,69],[64,69],[68,70],[72,71],[76,72],[80,73],[84,73],[88,73],[92,73],[96,73],[100,72],[104,72],[108,72],[112,72],[116,72],[120,72],[124,71],[128,71],[132,70],[136,69],[140,68],[144,67],[148,67],[150,65],[153,63],[156,62],[158,60],[160,59],[162,57],[162,56],[160,55],[158,54],[156,53],[153,52],[150,51],[148,50],[146,49],[144,48],[142,47],[140,46],[138,45],[136,44],[134,43],[132,43]],
+// Kamchatka (index 17)
+[[156,62],[157,60],[158,58],[160,56],[162,54],[163,52],[162,51],[160,52],[158,53],[156,54],[155,56],[155,58],[156,60],[156,62]],
+[[132,43],[131,42],[130,41],[129,39],[128,38],[127,36],[126,35],[126,37],[125,38],[124,39],[122,40],[121,39],[120,37],[119,36],[118,34],[117,33],[116,31],[115,30],[114,28],[113,27],[112,25],[111,23],[110,22],[109,21],[108,20],[107,18],[106,17],[106,16],[105,15],[104,13],[103,12],[102,12],[101,13],[100,14]],
+[[125,38],[126,38],[127,38],[128,38],[129,37],[129,36],[129,35],[128,34],[127,34],[126,35],[126,36],[126,37],[125,38]],
+[[131,34],[132,34],[133,34],[134,34],[135,35],[136,35],[137,35],[138,36],[139,36],[140,36],[141,37],[141,38],[141,39],[140,40],[140,41],[139,40],[138,39],[137,38],[136,37],[135,36],[134,35],[133,34],[132,33],[131,32],[130,32],[130,33],[131,34]],
+[[140,42],[141,43],[143,43],[145,44],[145,43],[144,42],[143,42],[142,41],[141,42],[140,42]],
+[[68,24],[69,23],[70,22],[71,21],[72,20],[73,18],[73,16],[74,15],[75,13],[76,11],[77,9],[78,8],[79,9],[80,10],[80,12],[80,14],[80,16],[81,17],[83,18],[85,19],[87,21],[88,22],[89,23],[90,22],[91,22],[92,21],[92,23],[90,24],[88,24],[86,23],[84,22],[82,21],[80,20],[78,21],[76,22],[74,23],[72,24],[70,25],[68,24]],
+[[100,14],[100,12],[100,10],[100,8],[101,6],[102,4],[103,2],[104,2],[104,4],[105,6],[106,8],[107,10],[108,12],[108,14],[108,16],[107,18]],
+[[-85,22],[-83,23],[-81,23],[-80,22],[-78,21],[-76,20],[-75,20],[-76,21],[-78,22],[-80,23],[-82,23],[-84,23],[-85,22]],
+[[-80,63],[-79,62],[-79,60],[-80,58],[-82,57],[-85,56],[-87,56],[-89,56],[-91,57],[-93,58],[-94,59],[-94,60],[-93,61],[-91,62],[-88,63],[-86,63],[-84,62],[-82,62],[-80,63]],
+[[-92,47],[-90,48],[-88,48],[-86,47],[-85,47],[-84,47],[-85,48],[-87,48],[-89,48],[-91,47],[-92,47]],
+[[-87,46],[-86,45],[-85,44],[-84,43],[-83,43],[-82,44],[-82,45],[-81,46],[-82,46],[-83,46],[-84,46],[-85,46],[-86,46],[-87,46]],
+[[-84,42],[-83,42],[-81,42],[-80,43],[-82,43],[-84,42]],
+].map(p=>p.map(([a,b])=>geo(a,b)));
+const sovPaths=new Set([16,17]);
 
-// ============================================================
-// MAP DATA - Detailed Northern Hemisphere wireframe
-// ============================================================
-
-// Convert geographic [longitude, latitude] to normalized screen [x, y]
-function geo(lon, lat) {
-  return [(lon + 170) / 370, (78 - lat) / 100];
-}
-
-function geoXY(lon, lat) {
-  const c = geo(lon, lat);
-  return { x: c[0], y: c[1] };
-}
-
-// Continent/coastline outlines in geographic coordinates [lon, lat]
-// Each sub-array is a separate stroke path
-const continentPaths = [
-
-  // ── NORTH AMERICA (mainland outline, clockwise from W. Alaska) ──
-  [
-    [-168,54],[-165,55],[-162,56],[-160,57],[-158,58],[-156,58],
-    [-154,59],[-152,59],[-150,61],[-149,61],[-148,60],[-146,60],
-    [-144,60],[-141,60],[-139,59],[-137,58],[-136,57],[-134,56],
-    [-132,55],[-130,54],[-130,52],[-128,51],[-127,50],[-126,49],
-    [-125,48],[-124,47],[-124,46],[-124,44],[-124,42],[-124,41],
-    [-123,39],[-122,38],[-121,36],[-120,35],[-119,34],[-118,34],
-    [-117,33],[-117,32],[-116,31],[-114,30],[-113,29],[-112,27],
-    [-111,25],[-110,24],[-109,23],[-107,21],[-105,20],[-104,19],
-    [-103,19],[-101,18],[-99,17],[-97,16],[-96,16],[-95,16],
-    [-94,16],[-93,16],[-92,17],[-91,18],[-90,19],[-90,20],
-    [-89,21],[-88,20],[-87,19],[-87,18],[-88,17],[-88,16],
-    [-89,17],[-90,18],[-90,19],
-    [-91,20],[-91,22],[-92,24],[-93,26],[-94,28],[-95,29],
-    [-96,29],[-97,28],[-97,27],[-97,26],[-96,26],[-97,27],
-    [-97,29],[-96,30],[-95,30],[-94,30],[-93,29],[-92,29],
-    [-91,29],[-90,29],[-89,29],[-89,30],[-88,30],[-87,30],
-    [-86,30],[-85,30],[-84,30],[-84,29],[-83,28],[-82,27],
-    [-82,26],[-81,25],[-80,25],
-    [-80,26],[-80,27],[-80,29],[-81,30],[-81,31],[-80,32],
-    [-79,33],[-78,34],[-77,35],[-76,36],[-76,37],[-77,38],
-    [-76,39],[-75,39],[-74,40],[-74,41],[-73,41],[-72,41],
-    [-71,42],[-70,42],[-70,43],[-69,44],[-68,44],[-67,45],
-    [-67,44],[-66,44],[-65,44],[-64,44],[-63,45],[-62,46],
-    [-61,46],[-60,47],[-59,47],[-57,47],[-56,47],[-55,47],
-    [-54,47],[-53,48],[-53,49],[-55,50],[-56,50],[-57,51],
-    [-56,52],[-55,53],[-56,53],[-58,54],[-59,55],[-60,56],
-    [-60,57],[-60,58],[-62,58],[-64,60],[-66,61],[-68,62],
-    [-70,63],[-73,63],[-76,64],[-79,64],[-80,63],[-82,62],
-    [-84,62],[-85,63],[-86,64],[-87,65],[-88,66],[-87,67],
-    [-85,68],[-84,69],[-85,70],[-87,71],[-90,71],[-95,72],
-    [-100,72],[-105,72],[-110,72],[-115,72],[-120,71],
-    [-125,71],[-130,70],[-135,70],[-140,69],[-145,70],
-    [-150,71],[-155,71],[-160,71],[-163,70],[-165,69],
-    [-167,67],[-166,65],[-164,63],[-164,61],[-165,59],
-    [-166,57],[-168,55],[-168,54]
-  ],
-
-  // ── GREENLAND ──
-  [
-    [-52,60],[-49,60],[-46,60],[-44,60],[-43,61],[-42,63],
-    [-43,65],[-45,66],[-47,68],[-50,69],[-53,70],[-55,72],
-    [-55,74],[-53,76],[-50,78],[-46,78],[-42,78],[-38,77],
-    [-33,76],[-28,75],[-24,74],[-21,73],[-19,71],[-19,70],
-    [-21,69],[-24,68],[-27,67],[-30,66],[-33,65],[-36,64],
-    [-39,63],[-42,62],[-44,61],[-47,60],[-50,60],[-52,60]
-  ],
-
-  // ── GREAT BRITAIN ──
-  [
-    [-5,50],[-6,50],[-5,51],[-5,52],[-4,53],[-3,53],[-3,54],
-    [-4,54],[-5,55],[-5,56],[-6,57],[-5,58],[-4,58],[-3,58],
-    [-2,57],[-1,57],[0,56],[1,55],[2,53],[1,52],[1,51],
-    [0,51],[-1,50],[-3,50],[-5,50]
-  ],
-
-  // ── IRELAND ──
-  [
-    [-10,52],[-10,53],[-10,54],[-9,54],[-8,55],[-7,55],
-    [-6,54],[-6,53],[-7,52],[-8,52],[-9,52],[-10,52]
-  ],
-
-  // ── ICELAND ──
-  [
-    [-24,64],[-22,64],[-20,64],[-18,65],[-16,66],[-14,66],
-    [-13,65],[-14,64],[-16,64],[-18,63],[-20,63],[-22,64],[-24,64]
-  ],
-
-  // ── SCANDINAVIA (Norway, Sweden, Finland) ──
-  [
-    [5,58],[5,59],[5,60],[5,61],[6,62],[8,63],[10,64],
-    [12,65],[14,66],[16,67],[17,68],[19,69],[21,70],[24,71],
-    [27,71],[29,70],[30,70],[30,69],[29,68],[28,66],[29,65],
-    [30,64],[28,63],[26,62],[24,61],[22,60],[20,60],[18,59],
-    [16,58],[14,57],[12,56],[11,56],[10,56],[9,57],[8,58],[5,58]
-  ],
-
-  // ── WESTERN EUROPE (Portugal, Spain, France, Low Countries) ──
-  [
-    [-10,37],[-9,38],[-9,39],[-9,40],[-8,41],[-9,42],[-9,43],
-    [-8,44],[-5,44],[-4,44],[-2,44],[-1,43],[0,43],[2,43],
-    [3,43],[4,43],[5,44],[4,46],[3,47],[2,48],[1,49],
-    [-1,48],[-3,48],[-5,48],[-4,49],[-2,49],[0,50],
-    [2,51],[3,51],[4,52],[5,53],[6,54],[7,54],[8,55],[9,54],
-    [10,54],[10,55],[11,54],[12,54],[14,54]
-  ],
-
-  // ── IBERIAN PENINSULA (south & east coast) ──
-  [
-    [-10,37],[-8,37],[-7,37],[-6,36],[-5,36],[-4,37],
-    [-3,37],[-2,37],[-1,37],[0,38],[0,39],[0,40],
-    [0,41],[-1,41],[-2,42],[-2,43]
-  ],
-
-  // ── ITALY ──
-  [
-    [7,44],[8,44],[9,44],[10,44],[11,44],[12,44],[13,44],
-    [14,43],[14,42],[15,41],[15,40],[16,39],[16,38],[15,38],
-    [16,38],[17,39],[18,40],[17,41],[16,42],[14,42],
-    [13,43],[12,44],[12,45],[12,46],[13,46],[14,46]
-  ],
-
-  // ── SICILY ──
-  [
-    [13,38],[14,37],[15,37],[16,38],[15,38],[13,38]
-  ],
-
-  // ── GREECE & BALKANS ──
-  [
-    [20,40],[21,39],[22,38],[23,37],[24,36],[25,36],
-    [26,37],[26,38],[26,40],[25,41],[24,41],[23,40],
-    [22,40],[20,40]
-  ],
-
-  // ── CRETE ──
-  [
-    [24,35],[25,35],[26,35],[24,35]
-  ],
-
-  // ── TURKEY ──
-  [
-    [26,42],[28,42],[30,42],[32,42],[34,42],[36,42],
-    [36,41],[36,40],[36,38],[36,37],[36,36],[35,36],
-    [34,36],[32,37],[30,36],[29,36],[28,37],[27,38],
-    [26,39],[26,41],[26,42]
-  ],
-
-  // ── NORTH AFRICA (Mediterranean coast: Morocco to Egypt) ──
-  [
-    [-6,35],[-5,36],[-3,35],[-2,35],[0,36],[2,37],
-    [4,37],[6,37],[8,37],[9,37],[10,37],[11,33],
-    [12,33],[13,33],[15,32],[18,33],[20,33],[22,32],
-    [25,32],[28,31],[30,31],[32,31],[34,32],[35,31]
-  ],
-
-  // ── EGYPT (Nile Delta to Sinai) ──
-  [
-    [25,32],[28,31],[30,31],[31,31],[33,30],[34,28],
-    [34,27],[33,28],[32,30],[31,31]
-  ],
-
-  // ── ARABIAN PENINSULA ──
-  [
-    [36,36],[37,35],[38,34],[40,32],[42,30],[43,28],
-    [44,26],[45,24],[46,22],[48,20],[50,19],[52,19],
-    [54,20],[55,22],[56,24],[56,25],[56,27],
-    [54,27],[52,26],[50,26],[48,27],[46,28],
-    [44,29],[43,30],[42,31],[40,33],[38,35],[36,36]
-  ],
-
-  // ── CASPIAN SEA ──
-  [
-    [49,47],[50,46],[50,45],[51,44],[51,43],[52,42],
-    [52,41],[52,40],[53,39],[54,38],[53,37],[52,37],
-    [51,38],[50,39],[49,40],[49,41],[48,42],[48,43],
-    [48,44],[49,45],[49,47]
-  ],
-
-  // ── BLACK SEA (outline) ──
-  [
-    [28,42],[29,43],[30,44],[32,44],[34,44],[36,43],
-    [38,43],[40,42],[41,42],[41,41],[40,41],[38,42],
-    [36,42],[34,42],[32,42],[30,42],[28,42]
-  ],
-
-  // ── RUSSIA / SIBERIA (Arctic coast, E from Scandinavia) ──
-  [
-    [30,70],[33,69],[36,69],[40,68],[44,68],[48,68],
-    [52,68],[56,68],[60,69],[64,69],[68,70],[72,71],
-    [76,72],[80,73],[84,73],[88,73],[92,73],[96,73],
-    [100,72],[104,72],[108,72],[112,72],[116,72],
-    [120,72],[124,71],[128,71],[132,70],[136,69],
-    [140,68],[144,67],[148,67],[150,65],[153,63],
-    [156,62],[158,60],[160,59],[162,57],[162,56],
-    [160,55],[158,54],[156,53],[153,52],[150,51],
-    [148,50],[146,49],[144,48],[142,47],[140,46],
-    [138,45],[136,44],[134,43],[132,43]
-  ],
-
-  // ── KAMCHATKA PENINSULA ──
-  [
-    [156,62],[157,60],[158,58],[160,56],[162,54],
-    [163,52],[162,51],[160,52],[158,53],[156,54],
-    [155,56],[155,58],[156,60],[156,62]
-  ],
-
-  // ── EAST ASIA COAST (Vladivostok down through China, Vietnam) ──
-  [
-    [132,43],[131,42],[130,41],[129,39],[128,38],
-    [127,36],[126,35],[126,37],[125,38],[124,39],
-    [122,40],[121,39],[120,37],[119,36],[118,34],
-    [117,33],[116,31],[115,30],[114,28],[113,27],
-    [112,25],[111,23],[110,22],[109,21],[108,20],
-    [107,18],[106,17],[106,16],[105,15],[104,13],
-    [103,12],[102,12],[101,13],[100,14]
-  ],
-
-  // ── KOREAN PENINSULA ──
-  [
-    [125,38],[126,38],[127,38],[128,38],[129,37],
-    [129,36],[129,35],[128,34],[127,34],[126,35],
-    [126,36],[126,37],[125,38]
-  ],
-
-  // ── JAPAN (Honshu/Shikoku/Kyushu combined outline) ──
-  [
-    [131,34],[132,34],[133,34],[134,34],[135,35],
-    [136,35],[137,35],[138,36],[139,36],[140,36],
-    [141,37],[141,38],[141,39],[140,40],[140,41],
-    [139,40],[138,39],[137,38],[136,37],[135,36],
-    [134,35],[133,34],[132,33],[131,32],[130,32],
-    [130,33],[131,34]
-  ],
-
-  // ── JAPAN (Hokkaido) ──
-  [
-    [140,42],[141,43],[143,43],[145,44],[145,43],
-    [144,42],[143,42],[142,41],[141,42],[140,42]
-  ],
-
-  // ── INDIA (subcontinent outline) ──
-  [
-    [68,24],[69,23],[70,22],[71,21],[72,20],
-    [73,18],[73,16],[74,15],[75,13],[76,11],
-    [77,9],[78,8],[79,9],[80,10],[80,12],
-    [80,14],[80,16],[81,17],[83,18],[85,19],
-    [87,21],[88,22],[89,23],[90,22],[91,22],
-    [92,21],[92,23],[90,24],[88,24],[86,23],
-    [84,22],[82,21],[80,20],[78,21],[76,22],
-    [74,23],[72,24],[70,25],[68,24]
-  ],
-
-  // ── SRI LANKA ──
-  [
-    [80,10],[80,8],[81,7],[82,8],[82,9],[80,10]
-  ],
-
-  // ── SOUTHEAST ASIA (Thailand, Vietnam, Malaysia) ──
-  [
-    [100,14],[100,12],[100,10],[100,8],[101,6],
-    [102,4],[103,2],[104,2],[104,4],[105,6],
-    [106,8],[107,10],[108,12],[108,14],[108,16],
-    [107,18]
-  ],
-
-  // ── PHILIPPINES (simplified) ──
-  [
-    [120,18],[121,17],[122,15],[123,13],[123,11],
-    [122,10],[121,11],[120,13],[119,15],[120,17],[120,18]
-  ],
-
-  // ── TAIWAN ──
-  [
-    [121,25],[121,24],[120,23],[120,24],[121,25]
-  ],
-
-  // ── CUBA ──
-  [
-    [-85,22],[-83,23],[-81,23],[-80,22],[-78,21],[-76,20],
-    [-75,20],[-76,21],[-78,22],[-80,23],[-82,23],[-84,23],[-85,22]
-  ],
-
-  // ── CENTRAL AMERICA (simplified) ──
-  [
-    [-92,17],[-90,15],[-88,15],[-86,14],[-84,12],
-    [-83,10],[-82,9],[-80,8]
-  ],
-
-  // ── HUDSON BAY (inner coastline) ──
-  [
-    [-80,63],[-79,62],[-79,60],[-80,58],[-82,57],
-    [-85,56],[-87,56],[-89,56],[-91,57],[-93,58],
-    [-94,59],[-94,60],[-93,61],[-91,62],[-88,63],
-    [-86,63],[-84,62],[-82,62],[-80,63]
-  ],
-
-  // ── GREAT LAKES (simplified outlines) ──
-  // Lake Superior
-  [
-    [-92,47],[-90,48],[-88,48],[-86,47],[-85,47],
-    [-84,47],[-85,48],[-87,48],[-89,48],[-91,47],[-92,47]
-  ],
-  // Lake Michigan + Huron (simplified)
-  [
-    [-87,46],[-86,45],[-85,44],[-84,43],[-83,43],
-    [-82,44],[-82,45],[-81,46],[-82,46],[-83,46],
-    [-84,46],[-85,46],[-86,46],[-87,46]
-  ],
-  // Lake Erie
-  [
-    [-84,42],[-83,42],[-81,42],[-80,43],[-82,43],[-84,42]
-  ],
-
-].map(path => path.map(([lon, lat]) => geo(lon, lat)));
-
-// ============================================================
-// TARGET & BASE POSITIONS (geographic coordinates)
-// ============================================================
-
-const sovietTargets = [
-  { name: "MOSCOW",      ...geoXY(37.6, 55.8) },
-  { name: "LENINGRAD",   ...geoXY(30.3, 59.9) },
-  { name: "KIEV",        ...geoXY(30.5, 50.4) },
-  { name: "MINSK",       ...geoXY(27.6, 53.9) },
-  { name: "SVERDLOVSK",  ...geoXY(60.6, 56.8) },
-  { name: "NOVOSIBIRSK", ...geoXY(82.9, 55.0) },
-  { name: "VLADIVOSTOK", ...geoXY(131.9, 43.1) },
-  { name: "MURMANSK",    ...geoXY(33.1, 68.9) },
-  { name: "KHABAROVSK",  ...geoXY(135.1, 48.5) },
-  { name: "OMSK",        ...geoXY(73.4, 54.9) },
-  { name: "IRKUTSK",     ...geoXY(104.3, 52.3) },
-  { name: "STALINGRAD",  ...geoXY(44.5, 48.7) },
-  { name: "TBILISI",     ...geoXY(44.8, 41.7) },
-  { name: "TASHKENT",    ...geoXY(69.3, 41.3) },
-  { name: "KRASNOYARSK", ...geoXY(92.9, 56.0) },
+// ── TARGETS & BASES ──
+const sovietTargets=[
+  {name:"MOSCOW",...geoXY(37.6,55.8)},{name:"LENINGRAD",...geoXY(30.3,59.9)},
+  {name:"KIEV",...geoXY(30.5,50.4)},{name:"MINSK",...geoXY(27.6,53.9)},
+  {name:"SVERDLOVSK",...geoXY(60.6,56.8)},{name:"NOVOSIBIRSK",...geoXY(82.9,55)},
+  {name:"VLADIVOSTOK",...geoXY(131.9,43.1)},{name:"MURMANSK",...geoXY(33.1,68.9)},
+  {name:"KHABAROVSK",...geoXY(135.1,48.5)},{name:"OMSK",...geoXY(73.4,54.9)},
+  {name:"IRKUTSK",...geoXY(104.3,52.3)},{name:"STALINGRAD",...geoXY(44.5,48.7)},
+  {name:"TBILISI",...geoXY(44.8,41.7)},{name:"TASHKENT",...geoXY(69.3,41.3)},
+  {name:"KRASNOYARSK",...geoXY(92.9,56)},
+];
+const usTargets=[
+  {name:"WASHINGTON DC",...geoXY(-77,38.9)},{name:"NEW YORK",...geoXY(-74,40.7)},
+  {name:"LOS ANGELES",...geoXY(-118.2,34.1)},{name:"CHICAGO",...geoXY(-87.6,41.9)},
+  {name:"HOUSTON",...geoXY(-95.4,29.8)},{name:"SEATTLE",...geoXY(-122.3,47.6)},
+  {name:"DENVER",...geoXY(-105,39.7)},{name:"SAN FRANCISCO",...geoXY(-122.4,37.8)},
+  {name:"BOSTON",...geoXY(-71.1,42.4)},{name:"MIAMI",...geoXY(-80.2,25.8)},
+  {name:"OMAHA",...geoXY(-95.9,41.3)},{name:"DETROIT",...geoXY(-83,42.3)},
+  {name:"CHEYENNE MT",...geoXY(-104.9,38.7)},{name:"GRAND FORKS",...geoXY(-97,47.9)},
+  {name:"PEARL HARBOR",...geoXY(-157.9,21.3)},
+];
+const euroTargets=[
+  {name:"LONDON",...geoXY(-0.1,51.5)},{name:"PARIS",...geoXY(2.3,48.9)},
+  {name:"BERLIN",...geoXY(13.4,52.5)},{name:"ROME",...geoXY(12.5,41.9)},
+  {name:"OSLO",...geoXY(10.7,59.9)},
+];
+const sovietBases=[geoXY(35.8,54),geoXY(45.7,51.7),geoXY(89.8,55.3),geoXY(59.5,50.9),geoXY(83.4,52.5),geoXY(60.6,53),geoXY(128.1,51.4),geoXY(30.8,48),geoXY(113.2,51.1),geoXY(93.3,55)];
+const usBases=[geoXY(-111.2,47.5),geoXY(-101.4,48.4),geoXY(-97.4,47.9),geoXY(-104.9,41.1),geoXY(-93.5,38.7),geoXY(-103.1,44.1),geoXY(-120.6,34.7),geoXY(-93.7,32.5)];
+const sacBases=[
+  {name:"GRAND FORKS",lbl:"313TH BOMB\nWING",...geoXY(-97,47.9)},
+  {name:"MINOT AFB",lbl:"5TH BOMB\nWING",...geoXY(-101.4,48.4)},
+  {name:"ELLSWORTH",lbl:"28TH BOMB\nWING",...geoXY(-103.1,44.1)},
+  {name:"LORING AFB",lbl:"42ND BOMB\nWING",...geoXY(-67.9,46.9)},
+  {name:"WHITEMAN",lbl:"351ST SMW",...geoXY(-93.5,38.7)},
+  {name:"BARKSDALE",lbl:"2ND BOMB\nWING",...geoXY(-93.7,32.5)},
 ];
 
-const usTargets = [
-  { name: "WASHINGTON DC", ...geoXY(-77.0, 38.9) },
-  { name: "NEW YORK",      ...geoXY(-74.0, 40.7) },
-  { name: "LOS ANGELES",   ...geoXY(-118.2, 34.1) },
-  { name: "CHICAGO",       ...geoXY(-87.6, 41.9) },
-  { name: "HOUSTON",       ...geoXY(-95.4, 29.8) },
-  { name: "SEATTLE",       ...geoXY(-122.3, 47.6) },
-  { name: "DENVER",        ...geoXY(-105.0, 39.7) },
-  { name: "SAN FRANCISCO", ...geoXY(-122.4, 37.8) },
-  { name: "BOSTON",         ...geoXY(-71.1, 42.4) },
-  { name: "MIAMI",         ...geoXY(-80.2, 25.8) },
-  { name: "OMAHA",         ...geoXY(-95.9, 41.3) },
-  { name: "DETROIT",       ...geoXY(-83.0, 42.3) },
-  { name: "CHEYENNE MT",   ...geoXY(-104.9, 38.7) },
-  { name: "GRAND FORKS",   ...geoXY(-97.0, 47.9) },
-  { name: "PEARL HARBOR",  ...geoXY(-157.9, 21.3) },
-];
-
-const euroTargets = [
-  { name: "LONDON", ...geoXY(-0.1, 51.5) },
-  { name: "PARIS",  ...geoXY(2.3, 48.9) },
-  { name: "BERLIN", ...geoXY(13.4, 52.5) },
-  { name: "ROME",   ...geoXY(12.5, 41.9) },
-  { name: "OSLO",   ...geoXY(10.7, 59.9) },
-];
-
-// Soviet ICBM field locations
-const sovietBases = [
-  geoXY(35.8, 54.0),  // Kozelsk
-  geoXY(45.7, 51.7),  // Tatishchevo
-  geoXY(89.8, 55.3),  // Uzhur
-  geoXY(59.5, 50.9),  // Dombarovsky
-  geoXY(83.4, 52.5),  // Aleysk
-  geoXY(60.6, 53.0),  // Kartaly
-  geoXY(128.1, 51.4), // Svobodny
-  geoXY(30.8, 48.0),  // Pervomaysk
-  geoXY(113.2, 51.1), // Drovyanaya
-  geoXY(93.3, 55.0),  // Krasnoyarsk-area
-];
-
-// US ICBM field & strategic base locations
-const usBases = [
-  geoXY(-111.2, 47.5), // Malmstrom AFB, MT
-  geoXY(-101.4, 48.4), // Minot AFB, ND
-  geoXY(-97.4, 47.9),  // Grand Forks AFB, ND
-  geoXY(-104.9, 41.1), // F.E. Warren AFB, WY
-  geoXY(-93.5, 38.7),  // Whiteman AFB, MO
-  geoXY(-103.1, 44.1), // Ellsworth AFB, SD
-  geoXY(-120.6, 34.7), // Vandenberg AFB, CA
-  geoXY(-93.7, 32.5),  // Barksdale AFB, LA
-];
-
-// ============================================================
-// MISSILE CLASS
-// ============================================================
-
+// ── MISSILE ──
 class Missile {
-  constructor(from, to, color, speed) {
-    this.fromX = from.x;
-    this.fromY = from.y;
-    this.toX = to.x;
-    this.toY = to.y;
-    this.targetName = to.name || "UNKNOWN";
-    this.color = color;
-    this.progress = 0;
-    this.speed = speed || (0.002 + Math.random() * 0.004);
-    this.done = false;
-    this.impacted = false;
-    this.arcHeight = 0.08 + Math.random() * 0.12;
-    this.trail = [];
+  constructor(from,to,color,speed){
+    this.fx=from.x;this.fy=from.y;this.tx=to.x;this.ty=to.y;
+    this.tgt=to.name||"";this.color=color;this.progress=0;
+    this.speed=speed||(0.002+Math.random()*0.004);
+    this.done=false;this.impacted=false;
+    this.arc=0.08+Math.random()*0.12;this.trail=[];
+    this.side=color===RED?'sov':'us';
   }
-
-  update() {
-    if (this.done) return;
-    this.progress += this.speed;
-    if (this.progress >= 1) {
-      this.progress = 1;
-      this.done = true;
-      if (!this.impacted) {
-        this.impacted = true;
-        totalImpacts++;
-        impacts.push({
-          x: this.toX, y: this.toY,
-          time: Date.now(), radius: 0, name: this.targetName,
-          color: this.color
-        });
+  update(){
+    if(this.done)return;
+    this.progress+=this.speed;
+    if(this.progress>=1){this.progress=1;this.done=true;
+      if(!this.impacted){this.impacted=true;totalImpacts++;
+        impacts.push({x:this.tx,y:this.ty,time:Date.now(),name:this.tgt,color:this.color});
       }
     }
-    // Store trail points
-    const pos = this.getPosition(this.progress);
-    this.trail.push(pos);
-    if (this.trail.length > 60) this.trail.shift();
+    const p=this.pos(this.progress);this.trail.push(p);
+    if(this.trail.length>50)this.trail.shift();
   }
-
-  getPosition(t) {
-    const x = this.fromX + (this.toX - this.fromX) * t;
-    const arc = Math.sin(t * Math.PI) * this.arcHeight;
-    const y = this.fromY + (this.toY - this.fromY) * t - arc;
-    return { x, y };
+  pos(t){
+    return{x:this.fx+(this.tx-this.fx)*t,
+           y:this.fy+(this.ty-this.fy)*t-Math.sin(t*Math.PI)*this.arc};
   }
-
-  draw(ctx, w, h) {
-    // Draw the full trajectory arc as a thin line
+  draw(ctx,w,h,vb,bright){
+    const ts=(px,py)=>{
+      if(!vb)return[px*w,py*h];
+      return[(px-vb.x)/vb.w*w,(py-vb.y)/vb.h*h];
+    };
+    // Visibility check
+    if(vb){
+      const a=this.pos(0),b=this.pos(0.5),c=this.pos(this.progress);
+      const inv=p=>p.x<vb.x-0.05||p.x>vb.x+vb.w+0.05||p.y<vb.y-0.05||p.y>vb.y+vb.h+0.05;
+      if(inv(a)&&inv(b)&&inv(c))return;
+    }
+    // Arc line
     ctx.beginPath();
-    ctx.strokeStyle = this.color + '40';
-    ctx.lineWidth = 0.5;
-    for (let t = 0; t <= Math.min(this.progress, 1); t += 0.02) {
-      const pos = this.getPosition(t);
-      if (t === 0) ctx.moveTo(pos.x * w, pos.y * h);
-      else ctx.lineTo(pos.x * w, pos.y * h);
+    ctx.strokeStyle=this.color+(bright?'55':'28');
+    ctx.lineWidth=bright?1.2:0.6;
+    let s=false;
+    for(let t=0;t<=Math.min(this.progress,1);t+=0.02){
+      const p=this.pos(t);const[sx,sy]=ts(p.x,p.y);
+      if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);
     }
     ctx.stroke();
-
-    // Draw brighter trail near the head
-    if (!this.done) {
-      const trailLen = Math.min(this.trail.length, 15);
-      for (let i = this.trail.length - trailLen; i < this.trail.length; i++) {
-        const alpha = (i - (this.trail.length - trailLen)) / trailLen;
+    // Head
+    if(!this.done){
+      const tl=Math.min(this.trail.length,10);
+      for(let i=this.trail.length-tl;i<this.trail.length;i++){
+        const a=(i-(this.trail.length-tl))/tl;
+        const[sx,sy]=ts(this.trail[i].x,this.trail[i].y);
         ctx.beginPath();
-        ctx.fillStyle = this.color + Math.floor(alpha * 200).toString(16).padStart(2, '0');
-        ctx.arc(this.trail[i].x * w, this.trail[i].y * h, 1 + alpha * 1.5, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle=WHITE+Math.floor(a*160).toString(16).padStart(2,'0');
+        ctx.arc(sx,sy,(bright?1.2:0.6)+a*1.2,0,Math.PI*2);ctx.fill();
       }
-
-      // Draw missile head
-      const head = this.getPosition(this.progress);
-      ctx.beginPath();
-      ctx.fillStyle = this.color;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 6;
-      ctx.arc(head.x * w, head.y * h, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      const p=this.pos(this.progress);const[hx,hy]=ts(p.x,p.y);
+      ctx.beginPath();ctx.fillStyle=WHITE;
+      ctx.shadowColor=this.color;ctx.shadowBlur=bright?8:4;
+      ctx.arc(hx,hy,bright?2.5:1.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
     }
   }
 }
 
-// ============================================================
-// DEFCON CONFIGURATION
-// ============================================================
-
-const defconConfig = {
-  5: { missileRate: 0, label: "PEACE", color: "#3366ff", bgFlicker: false },
-  4: { missileRate: 0, label: "INCREASED READINESS", color: "#33cc33", bgFlicker: false },
-  3: { missileRate: 2000, label: "ROUND HOUSE", color: "#cccc00", bgFlicker: false },
-  2: { missileRate: 600, label: "FAST PACE", color: "#ff8800", bgFlicker: false },
-  1: { missileRate: 120, label: "COCKED PISTOL", color: "#ff2222", bgFlicker: true },
+// ── DEFCON CONFIG ──
+const DC={
+  5:{rate:0,lbl:"FADE OUT"},4:{rate:0,lbl:"DOUBLE TAKE"},
+  3:{rate:2000,lbl:"ROUND HOUSE"},2:{rate:600,lbl:"FAST PACE"},
+  1:{rate:100,lbl:"COCKED PISTOL"},
 };
 
-// ============================================================
-// DEFCON CONTROL
-// ============================================================
-
-function setDefcon(level) {
-  currentDefcon = level;
-
-  // Update buttons
-  document.querySelectorAll('.defcon-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelector(`.defcon-${level}`).classList.add('active');
-
-  // Update display
-  const cfg = defconConfig[level];
-  const dd = document.getElementById('defcon-display');
-  dd.textContent = `DEFCON ${level}`;
-  dd.style.color = cfg.color;
-  dd.style.textShadow = `0 0 10px ${cfg.color}`;
-
-  if (level <= 3) {
-    warStartTime = Date.now();
-    addEvent(`DEFCON ${level} — ${cfg.label}`);
-  }
-
-  if (level === 3) {
-    addEvent("EARLY WARNING SATELLITES ACTIVE");
-    addEvent("MONITORING ICBM FIELDS");
-  } else if (level === 2) {
-    addEvent("MULTIPLE LAUNCH DETECTIONS");
-    addEvent("STRATEGIC AIR COMMAND ALERTED");
-    addEvent("BOMBER WINGS SCRAMBLED");
-  } else if (level === 1) {
-    addEvent("MASSIVE FIRST STRIKE DETECTED");
-    addEvent("RETALIATORY LAUNCH AUTHORIZED");
-    addEvent("ALL ASSETS WEAPONS FREE");
-  }
-
-  if (level >= 4) {
-    missiles = [];
-    impacts = [];
-    totalMissiles = 0;
-    totalImpacts = 0;
-    strikeData = [];
-    eventMessages = [];
-    if (level === 5) addEvent("SYSTEM READY — NO THREATS DETECTED");
-    if (level === 4) addEvent("ELEVATED ALERT — MONITORING");
-  }
+function setDefcon(l){
+  currentDefcon=l;
+  document.querySelectorAll('.defcon-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.defcon-'+l).classList.add('active');
+  if(l<=3){warStartTime=Date.now();addEvent(`DEFCON ${l} — ${DC[l].lbl}`);}
+  if(l===3){addEvent("BMEWS TRACKING ACTIVE");addEvent("DSP SATELLITES MONITORING");}
+  else if(l===2){addEvent("MULTIPLE LAUNCH DETECTIONS");addEvent("SAC FORCES SCRAMBLED");addEvent("LOOKING GLASS AIRBORNE");}
+  else if(l===1){addEvent("MASSIVE ATTACK UNDERWAY");addEvent("RETALIATORY LAUNCH AUTH");addEvent("ALL ASSETS WEAPONS FREE");}
+  if(l>=4){missiles=[];impacts=[];totalMissiles=0;totalImpacts=0;strikeData=[];eventMessages=[];
+    if(l===5)addEvent("SYSTEM READY");if(l===4)addEvent("INCREASED READINESS");}
 }
 
-// ============================================================
-// EVENT LOG
-// ============================================================
-
-function addEvent(msg) {
-  eventMessages.unshift({ text: msg, time: Date.now() });
-  if (eventMessages.length > 8) eventMessages.pop();
-}
-
-function renderEventLog() {
-  const el = document.getElementById('event-log');
-  el.innerHTML = eventMessages.map((e, i) => {
-    const age = Date.now() - e.time;
-    const opacity = Math.max(0.3, 1 - age / 15000);
-    return `<div style="opacity:${opacity}">${e.text}</div>`;
+function addEvent(m){eventMessages.unshift({text:m,time:Date.now()});if(eventMessages.length>6)eventMessages.pop();}
+function renderLog(){
+  const el=document.getElementById('event-log');
+  el.innerHTML=eventMessages.map(e=>{
+    const a=Math.max(0.3,1-(Date.now()-e.time)/15000);
+    return`<div style="opacity:${a}">${e.text}</div>`;
   }).join('');
 }
 
-// ============================================================
-// LAUNCH MISSILES
-// ============================================================
-
-function launchMissile() {
-  const cfg = defconConfig[currentDefcon];
-  if (cfg.missileRate === 0) return;
-
-  const now = Date.now();
-  if (now - lastMissileTime < cfg.missileRate) return;
-  lastMissileTime = now;
-
-  // Determine launch count based on defcon
-  const count = currentDefcon === 1 ? Math.floor(2 + Math.random() * 5) :
-                currentDefcon === 2 ? Math.floor(1 + Math.random() * 3) : 1;
-
-  for (let i = 0; i < count; i++) {
-    const side = Math.random() < 0.5 ? 'soviet' : 'us';
-    let from, to, color;
-
-    if (side === 'soviet') {
-      from = sovietBases[Math.floor(Math.random() * sovietBases.length)];
-      const allTargets = [...usTargets, ...euroTargets];
-      to = allTargets[Math.floor(Math.random() * allTargets.length)];
-      color = '#ff3333';
-    } else {
-      from = usBases[Math.floor(Math.random() * usBases.length)];
-      to = sovietTargets[Math.floor(Math.random() * sovietTargets.length)];
-      color = '#33ff33';
+function launchMissile(){
+  if(DC[currentDefcon].rate===0)return;
+  const now=Date.now();
+  if(now-lastMissileTime<DC[currentDefcon].rate)return;
+  lastMissileTime=now;
+  const cnt=currentDefcon===1?Math.floor(3+Math.random()*6):currentDefcon===2?Math.floor(1+Math.random()*3):1;
+  for(let i=0;i<cnt;i++){
+    const side=Math.random()<0.5?'sov':'us';
+    let from,to,color;
+    if(side==='sov'){
+      from=sovietBases[Math.floor(Math.random()*sovietBases.length)];
+      const at=[...usTargets,...euroTargets];to=at[Math.floor(Math.random()*at.length)];color=RED;
+    }else{
+      from=usBases[Math.floor(Math.random()*usBases.length)];
+      to=sovietTargets[Math.floor(Math.random()*sovietTargets.length)];color=BLUE_B;
     }
-
-    const m = new Missile(from, to, color, 0.003 + Math.random() * 0.005);
-    missiles.push(m);
-    totalMissiles++;
-
-    // Occasional event message
-    if (Math.random() < 0.15) {
-      const verb = side === 'soviet' ? 'INBOUND' : 'OUTBOUND';
-      addEvent(`${verb} ICBM — TGT: ${to.name}`);
-    }
+    missiles.push(new Missile(from,to,color,0.003+Math.random()*0.005));totalMissiles++;
+    if(Math.random()<0.12){addEvent(`${side==='sov'?'INBOUND':'OUTBOUND'} — TGT: ${to.name}`);}
   }
-
-  // Track strike data for graphs
-  strikeData.push({ time: now, total: totalMissiles, impacts: totalImpacts });
-  if (strikeData.length > 200) strikeData.shift();
+  strikeData.push({time:now,total:totalMissiles,impacts:totalImpacts});
+  if(strikeData.length>200)strikeData.shift();
 }
 
-// ============================================================
-// DRAW MAIN MAP
-// ============================================================
-
-function drawMap(ctx, w, h) {
-  ctx.clearRect(0, 0, w, h);
-
-  // Background flicker at DEFCON 1
-  if (currentDefcon === 1 && Math.random() < 0.03) {
-    ctx.fillStyle = 'rgba(255,0,0,0.02)';
-    ctx.fillRect(0, 0, w, h);
+// ── DRAWING HELPERS ──
+function drawGrid(ctx,w,h,n,c){
+  ctx.strokeStyle=c||'#0a0f1a';ctx.lineWidth=0.5;
+  for(let i=0;i<=n;i++){
+    ctx.beginPath();ctx.moveTo(i*w/n,0);ctx.lineTo(i*w/n,h);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*h/n);ctx.lineTo(w,i*h/n);ctx.stroke();
   }
+}
 
-  // Draw grid lines
-  ctx.strokeStyle = '#0a1a0a';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 20; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * w / 20, 0);
-    ctx.lineTo(i * w / 20, h);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, i * h / 20);
-    ctx.lineTo(w, i * h / 20);
-    ctx.stroke();
-  }
-
-  // Draw continents
-  const mapColor = defconConfig[currentDefcon].color;
-  ctx.strokeStyle = mapColor + '50';
-  ctx.lineWidth = 1.2;
-  continentPaths.forEach(path => {
-    ctx.beginPath();
-    path.forEach((p, i) => {
-      if (i === 0) ctx.moveTo(p[0] * w, p[1] * h);
-      else ctx.lineTo(p[0] * w, p[1] * h);
+function drawCoast(ctx,w,h,vb,fc,ec){
+  continentPaths.forEach((path,idx)=>{
+    const isSov=sovPaths.has(idx);
+    ctx.strokeStyle=isSov?(ec||RED_D):(fc||BLUE_D);
+    ctx.lineWidth=isSov?1.3:1;
+    ctx.beginPath();let s=false;
+    path.forEach(p=>{
+      let sx,sy;
+      if(vb){sx=(p[0]-vb.x)/vb.w*w;sy=(p[1]-vb.y)/vb.h*h;}
+      else{sx=p[0]*w;sy=p[1]*h;}
+      if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);
     });
     ctx.stroke();
   });
+}
 
-  // Draw targets as dots
-  const drawTargets = (targets, color) => {
-    targets.forEach(t => {
-      ctx.beginPath();
-      ctx.fillStyle = color + '60';
-      ctx.arc(t.x * w, t.y * h, 2, 0, Math.PI * 2);
-      ctx.fill();
+function drawSquares(ctx,tgts,w,h,vb,color,sz){
+  const s=sz||3;ctx.strokeStyle=color;ctx.lineWidth=1;
+  tgts.forEach(t=>{
+    let sx,sy;
+    if(vb){sx=(t.x-vb.x)/vb.w*w;sy=(t.y-vb.y)/vb.h*h;if(sx<-10||sx>w+10||sy<-10||sy>h+10)return;}
+    else{sx=t.x*w;sy=t.y*h;}
+    ctx.strokeRect(sx-s,sy-s,s*2,s*2);
+  });
+}
 
-      // Show name for impacted targets
-      const impacted = impacts.find(imp => imp.name === t.name);
-      if (impacted) {
-        ctx.fillStyle = color + 'aa';
-        ctx.font = `${Math.max(8, w * 0.012)}px 'Share Tech Mono', monospace`;
-        ctx.fillText(t.name, t.x * w + 5, t.y * h - 5);
+function drawImpacts(ctx,w,h,vb){
+  impacts.forEach(imp=>{
+    let sx,sy;
+    if(vb){sx=(imp.x-vb.x)/vb.w*w;sy=(imp.y-vb.y)/vb.h*h;if(sx<-20||sx>w+20||sy<-20||sy>h+20)return;}
+    else{sx=imp.x*w;sy=imp.y*h;}
+    const age=Date.now()-imp.time;
+    if(age<3000){
+      const r=Math.min(age/80,20),a=Math.max(0,1-age/3000);
+      ctx.beginPath();ctx.strokeStyle=imp.color+Math.floor(a*200).toString(16).padStart(2,'0');
+      ctx.lineWidth=1.5;ctx.arc(sx,sy,r,0,Math.PI*2);ctx.stroke();
+      if(age<200){ctx.beginPath();ctx.fillStyle='#ffffff'+Math.floor((1-age/200)*200).toString(16).padStart(2,'0');
+        ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fill();}
+    }else{ctx.beginPath();ctx.fillStyle=(imp.color||RED)+'18';ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();}
+  });
+}
+
+// ── PANEL DRAWS ──
+function drawAlaska(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const vb={x:geo(-175,0)[0],y:geo(0,72)[1],w:0.18,h:0.30};
+  drawGrid(ctx,w,h,10);
+  // Radar sweep
+  const sa=(Date.now()/3000)%(Math.PI*2);
+  const cx=w*0.35,cy=h*0.55;
+  ctx.beginPath();ctx.moveTo(cx,cy);
+  ctx.arc(cx,cy,Math.max(w,h),sa,sa+0.15);ctx.closePath();
+  ctx.fillStyle='rgba(68,136,255,0.04)';ctx.fill();
+  ctx.strokeStyle=BLUE_D+'40';ctx.lineWidth=0.5;
+  for(let r=1;r<=4;r++){ctx.beginPath();ctx.arc(cx,cy,r*w*0.2,0,Math.PI*2);ctx.stroke();}
+  drawCoast(ctx,w,h,vb,BLUE_D,RED_D);
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,true));drawImpacts(ctx,w,h,vb);}
+}
+
+function drawCONUS(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const vb={x:geo(-130,0)[0],y:geo(0,52)[1],w:0.22,h:0.32};
+  drawGrid(ctx,w,h,14);
+  drawCoast(ctx,w,h,vb,BLUE+'55',RED+'35');
+  // Meridian/parallel grid for state feel
+  ctx.strokeStyle=BLUE_D+'18';ctx.lineWidth=0.3;
+  for(let lon=-120;lon<=-70;lon+=10){const sx=(geo(lon,0)[0]-vb.x)/vb.w*w;ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,h);ctx.stroke();}
+  for(let lat=25;lat<=50;lat+=5){const sy=(geo(0,lat)[1]-vb.y)/vb.h*h;ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(w,sy);ctx.stroke();}
+  drawSquares(ctx,usTargets,w,h,vb,CYAN+'70',3);
+  usBases.forEach(b=>{
+    const sx=(b.x-vb.x)/vb.w*w,sy=(b.y-vb.y)/vb.h*h;
+    if(sx<-10||sx>w+10||sy<-10||sy>h+10)return;
+    ctx.fillStyle=BLUE+'80';ctx.fillRect(sx-2.5,sy-2.5,5,5);
+  });
+  ctx.fillStyle=BLUE+'60';ctx.font=`${Math.max(7,w*0.016)}px 'Share Tech Mono',monospace`;
+  usTargets.slice(0,10).forEach(t=>{
+    const sx=(t.x-vb.x)/vb.w*w,sy=(t.y-vb.y)/vb.h*h;
+    if(sx>5&&sx<w-40&&sy>18&&sy<h-5)ctx.fillText(t.name,sx+5,sy-3);
+  });
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,true));drawImpacts(ctx,w,h,vb);}
+}
+
+function drawSoviet(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const vb={x:geo(20,0)[0],y:geo(0,75)[1],w:0.42,h:0.50};
+  drawGrid(ctx,w,h,14);
+  drawCoast(ctx,w,h,vb,BLUE_D+'35',RED+'50');
+  drawSquares(ctx,sovietTargets,w,h,vb,RED+'60',3);
+  sovietBases.forEach(b=>{
+    const sx=(b.x-vb.x)/vb.w*w,sy=(b.y-vb.y)/vb.h*h;
+    if(sx<-10||sx>w+10||sy<-10||sy>h+10)return;
+    ctx.fillStyle=RED+'70';ctx.fillRect(sx-2,sy-2,4,4);
+  });
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,true));drawImpacts(ctx,w,h,vb);}
+}
+
+function drawSAC(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const vb={x:geo(-115,0)[0],y:geo(0,52)[1],w:0.15,h:0.20};
+  drawGrid(ctx,w,h,10);
+  drawCoast(ctx,w,h,vb,BLUE_D+'35',RED_D);
+  // NORAD star
+  const n=geoXY(-104.9,38.7);
+  const nx=(n.x-vb.x)/vb.w*w,ny=(n.y-vb.y)/vb.h*h;
+  if(nx>0&&nx<w&&ny>0&&ny<h){
+    ctx.fillStyle=CYAN;ctx.beginPath();
+    for(let i=0;i<5;i++){
+      const a=-Math.PI/2+(i*2*Math.PI/5),ar=-Math.PI/2+((i+0.5)*2*Math.PI/5);
+      ctx.lineTo(nx+Math.cos(a)*6,ny+Math.sin(a)*6);
+      ctx.lineTo(nx+Math.cos(ar)*3,ny+Math.sin(ar)*3);
+    }
+    ctx.closePath();ctx.fill();
+    ctx.font=`${Math.max(7,w*0.02)}px 'Share Tech Mono',monospace`;ctx.fillText('NORAD',nx+8,ny+3);
+  }
+  // Sector numbers
+  ctx.fillStyle=BLUE+'45';ctx.font=`${Math.max(12,w*0.04)}px 'Share Tech Mono',monospace`;
+  [{n:'25',lon:-105,lat:47},{n:'24',lon:-98,lat:47},{n:'27',lon:-102,lat:42},{n:'26',lon:-95,lat:43}].forEach(s=>{
+    const sx=(geo(s.lon,0)[0]-vb.x)/vb.w*w,sy=(geo(0,s.lat)[1]-vb.y)/vb.h*h;
+    if(sx>0&&sx<w&&sy>0&&sy<h)ctx.fillText(s.n,sx,sy);
+  });
+  // SAC bases
+  ctx.font=`${Math.max(6,w*0.014)}px 'Share Tech Mono',monospace`;
+  sacBases.forEach(b=>{
+    const sx=(b.x-vb.x)/vb.w*w,sy=(b.y-vb.y)/vb.h*h;
+    if(sx<0||sx>w||sy<0||sy>h)return;
+    ctx.fillStyle=CYAN+'cc';ctx.fillRect(sx-3,sy-3,6,6);
+    ctx.fillStyle=BLUE_B+'70';
+    (b.lbl||b.name).split('\n').forEach((l,i)=>ctx.fillText(l,sx+6,sy-2+i*9));
+  });
+  // Scramble lines
+  if(currentDefcon<=2){
+    const el=(Date.now()-warStartTime)/1000;
+    sacBases.forEach(b=>{
+      const sx=(b.x-vb.x)/vb.w*w,sy=(b.y-vb.y)/vb.h*h;
+      if(sx<0||sx>w||sy<0||sy>h)return;
+      ctx.strokeStyle=CYAN+'35';ctx.lineWidth=0.8;
+      for(let a=-1.5;a<-0.3;a+=0.4){
+        const len=Math.min(1,el/8)*60+10;
+        ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(a)*len,sy+Math.sin(a)*len);ctx.stroke();
       }
     });
-  };
+  }
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,false));drawImpacts(ctx,w,h,vb);}
+}
 
-  drawTargets([...usTargets, ...euroTargets], '#ff3333');
-  drawTargets(sovietTargets, '#33ff33');
+function drawAtlantic(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const vb={x:geo(-85,0)[0],y:geo(0,60)[1],w:0.22,h:0.38};
+  drawGrid(ctx,w,h,12);
+  drawCoast(ctx,w,h,vb,BLUE+'40',RED_D+'35');
+  // ADIZ lines
+  ctx.strokeStyle=BLUE+'28';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  [[[-75,50],[-50,55]],[[-70,45],[-45,50]],[[-65,40],[-40,45]],[[-75,50],[-70,45]],[[-70,45],[-65,40]]].forEach(([f,t])=>{
+    const x1=(geo(f[0],0)[0]-vb.x)/vb.w*w,y1=(geo(0,f[1])[1]-vb.y)/vb.h*h;
+    const x2=(geo(t[0],0)[0]-vb.x)/vb.w*w,y2=(geo(0,t[1])[1]-vb.y)/vb.h*h;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  // Sector numbers
+  ctx.fillStyle=BLUE+'45';ctx.font=`${Math.max(14,w*0.045)}px 'Share Tech Mono',monospace`;
+  [{n:'21',lon:-60,lat:48},{n:'22',lon:-55,lat:53},{n:'20',lon:-65,lat:43}].forEach(s=>{
+    const sx=(geo(s.lon,0)[0]-vb.x)/vb.w*w,sy=(geo(0,s.lat)[1]-vb.y)/vb.h*h;
+    ctx.fillText(s.n,sx,sy);
+  });
+  // East coast bases
+  ctx.font=`${Math.max(6,w*0.014)}px 'Share Tech Mono',monospace`;
+  [{name:"LORING\nAIR FORCE BASE",...geoXY(-67.9,46.9)},{name:"OTIS AFB",...geoXY(-70.5,41.7)}].forEach(b=>{
+    const sx=(b.x-vb.x)/vb.w*w,sy=(b.y-vb.y)/vb.h*h;
+    if(sx<0||sx>w||sy<0||sy>h)return;
+    ctx.beginPath();ctx.strokeStyle=CYAN+'aa';ctx.lineWidth=1.5;ctx.arc(sx,sy,6,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=BLUE_B+'70';b.name.split('\n').forEach((l,i)=>ctx.fillText(l,sx+9,sy-2+i*9));
+  });
+  drawSquares(ctx,usTargets.filter(t=>['BOSTON','NEW YORK','WASHINGTON DC'].includes(t.name)),w,h,vb,CYAN+'55',4);
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,false));drawImpacts(ctx,w,h,vb);}
+}
 
-  // Draw launch bases
-  const drawBases = (bases, color) => {
-    bases.forEach(b => {
-      ctx.beginPath();
-      ctx.strokeStyle = color + '30';
-      ctx.lineWidth = 0.5;
-      const s = 3;
-      ctx.moveTo(b.x * w - s, b.y * h - s);
-      ctx.lineTo(b.x * w + s, b.y * h + s);
-      ctx.moveTo(b.x * w + s, b.y * h - s);
-      ctx.lineTo(b.x * w - s, b.y * h + s);
-      ctx.stroke();
+function drawGlobal(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,16);
+  drawCoast(ctx,w,h,null,BLUE_D,RED+'35');
+  drawSquares(ctx,usTargets,w,h,null,CYAN+'40',2);
+  drawSquares(ctx,euroTargets,w,h,null,CYAN+'35',2);
+  drawSquares(ctx,sovietTargets,w,h,null,RED+'45',2);
+  usBases.forEach(b=>{ctx.fillStyle=BLUE+'50';ctx.fillRect(b.x*w-1.5,b.y*h-1.5,3,3);});
+  sovietBases.forEach(b=>{ctx.fillStyle=RED+'45';ctx.fillRect(b.x*w-1.5,b.y*h-1.5,3,3);});
+  if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,null,false));drawImpacts(ctx,w,h,null);}
+}
+
+// ── RESIZE ──
+function resize(){
+  cvs.forEach(({c})=>{
+    const r=c.parentElement.getBoundingClientRect(),d=window.devicePixelRatio;
+    c.width=r.width*d;c.height=r.height*d;
+    c.getContext('2d').scale(d,d);
+    c.style.width=r.width+'px';c.style.height=r.height+'px';
+  });
+}
+
+// ── STATUS ──
+function updateStatus(){
+  document.getElementById('ct4').textContent=String(totalMissiles).padStart(4,' ');
+  document.getElementById('ct5').textContent=String(totalImpacts).padStart(4,' ');
+  if(currentDefcon<=3){
+    const el=(Date.now()-warStartTime)/1000;
+    const base=[3252,3416,5417,7671],decay=currentDefcon===1?15:currentDefcon===2?5:1;
+    ['ct0','ct1','ct2','ct3'].forEach((id,i)=>{
+      document.getElementById(id).textContent=String(Math.max(0,base[i]-Math.floor(el*decay*(1+Math.random()*0.3)))).padStart(4,' ');
     });
-  };
-
-  if (currentDefcon <= 3) {
-    drawBases(sovietBases, '#ff3333');
-    drawBases(usBases, '#33ff33');
   }
-
-  // Draw missiles
-  missiles.forEach(m => m.draw(ctx, w, h));
-
-  // Draw impacts
-  impacts.forEach(imp => {
-    const age = Date.now() - imp.time;
-    if (age < 4000) {
-      const r = Math.min(age / 100, 20);
-      const alpha = Math.max(0, 1 - age / 4000);
-
-      // Expanding ring
-      ctx.beginPath();
-      ctx.strokeStyle = imp.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-      ctx.lineWidth = 1;
-      ctx.arc(imp.x * w, imp.y * h, r, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Flash
-      if (age < 300) {
-        ctx.beginPath();
-        ctx.fillStyle = '#ffffff' + Math.floor((1 - age / 300) * 180).toString(16).padStart(2, '0');
-        ctx.arc(imp.x * w, imp.y * h, 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else {
-      // Persistent glow
-      ctx.beginPath();
-      ctx.fillStyle = imp.color + '15';
-      ctx.arc(imp.x * w, imp.y * h, 8, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  });
 }
 
-// ============================================================
-// DRAW THREAT ASSESSMENT (Bottom Left)
-// ============================================================
-
-function drawThreatPanel(ctx, w, h) {
-  ctx.clearRect(0, 0, w, h);
-
-  const cfg = defconConfig[currentDefcon];
-  const pad = { top: 25, bottom: 15, left: 15, right: 15 };
-  const plotW = w - pad.left - pad.right;
-  const plotH = h - pad.top - pad.bottom;
-
-  // Grid
-  ctx.strokeStyle = '#0a1a0a';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 10; i++) {
-    const x = pad.left + (plotW / 10) * i;
-    const y = pad.top + (plotH / 10) * i;
-    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
-  }
-
-  // Axes
-  ctx.strokeStyle = cfg.color + '40';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad.left, pad.top);
-  ctx.lineTo(pad.left, pad.top + plotH);
-  ctx.lineTo(pad.left + plotW, pad.top + plotH);
-  ctx.stroke();
-
-  // Regions / threat bars
-  const regions = [
-    { name: "CONUS", threat: 0 },
-    { name: "EUR", threat: 0 },
-    { name: "PAC", threat: 0 },
-    { name: "USSR", threat: 0 },
-    { name: "SLBM", threat: 0 },
-    { name: "SAC", threat: 0 },
-  ];
-
-  // Calculate threat levels
-  if (currentDefcon <= 3) {
-    const elapsed = (Date.now() - warStartTime) / 1000;
-    const maxThreat = currentDefcon === 1 ? 0.95 : currentDefcon === 2 ? 0.7 : 0.35;
-    regions[0].threat = Math.min(maxThreat, elapsed * 0.01 * (6 - currentDefcon) + Math.sin(elapsed * 0.5) * 0.05);
-    regions[1].threat = Math.min(maxThreat, elapsed * 0.008 * (6 - currentDefcon) + Math.sin(elapsed * 0.7) * 0.04);
-    regions[2].threat = Math.min(maxThreat * 0.7, elapsed * 0.006 * (6 - currentDefcon) + Math.sin(elapsed * 0.3) * 0.03);
-    regions[3].threat = Math.min(maxThreat, elapsed * 0.012 * (6 - currentDefcon) + Math.sin(elapsed * 0.6) * 0.06);
-    regions[4].threat = Math.min(maxThreat * 0.8, elapsed * 0.009 * (6 - currentDefcon) + Math.cos(elapsed * 0.4) * 0.04);
-    regions[5].threat = Math.min(maxThreat * 0.6, elapsed * 0.007 * (6 - currentDefcon) + Math.sin(elapsed * 0.8) * 0.03);
-    regions.forEach(r => r.threat = Math.max(0, r.threat));
-  }
-
-  const barW = plotW / regions.length - 8;
-
-  regions.forEach((r, i) => {
-    const x = pad.left + (plotW / regions.length) * i + 4;
-    const barH = r.threat * plotH;
-    const y = pad.top + plotH - barH;
-
-    // Bar color based on threat
-    let barColor;
-    if (r.threat > 0.7) barColor = '#ff2222';
-    else if (r.threat > 0.4) barColor = '#ff8800';
-    else if (r.threat > 0.1) barColor = '#cccc00';
-    else barColor = '#33cc33';
-
-    // Bar glow
-    ctx.fillStyle = barColor + '20';
-    ctx.fillRect(x, y, barW, barH);
-
-    // Bar outline
-    ctx.strokeStyle = barColor + 'aa';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, barW, barH);
-
-    // Scanning line effect
-    if (currentDefcon <= 3) {
-      const scanY = pad.top + (Date.now() / 20 % plotH);
-      if (scanY >= y && scanY <= y + barH) {
-        ctx.fillStyle = barColor + '40';
-        ctx.fillRect(x, scanY - 1, barW, 2);
-      }
-    }
-
-    // Label
-    ctx.fillStyle = cfg.color + 'cc';
-    ctx.font = `${Math.max(8, w * 0.025)}px 'Share Tech Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText(r.name, x + barW / 2, pad.top + plotH + 12);
-
-    // Percentage
-    if (r.threat > 0) {
-      ctx.fillStyle = barColor;
-      ctx.fillText(Math.floor(r.threat * 100) + '%', x + barW / 2, y - 4);
-    }
-  });
-
-  ctx.textAlign = 'left';
-
-  // DEFCON indicator
-  ctx.fillStyle = cfg.color;
-  ctx.font = `${Math.max(10, w * 0.03)}px 'Share Tech Mono', monospace`;
-  ctx.textAlign = 'right';
-  ctx.fillText(`DEFCON ${currentDefcon}`, w - pad.right, pad.top + 15);
-
-  if (currentDefcon <= 3) {
-    ctx.fillStyle = cfg.color + '88';
-    ctx.font = `${Math.max(8, w * 0.022)}px 'Share Tech Mono', monospace`;
-    ctx.fillText(cfg.label, w - pad.right, pad.top + 30);
-  }
-  ctx.textAlign = 'left';
-}
-
-// ============================================================
-// DRAW STRIKE ANALYSIS (Bottom Right)
-// ============================================================
-
-function drawStrikePanel(ctx, w, h) {
-  ctx.clearRect(0, 0, w, h);
-
-  const cfg = defconConfig[currentDefcon];
-  const pad = { top: 25, bottom: 20, left: 40, right: 15 };
-  const plotW = w - pad.left - pad.right;
-  const plotH = h - pad.top - pad.bottom;
-
-  // Grid
-  ctx.strokeStyle = '#0a1a0a';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 10; i++) {
-    const x = pad.left + (plotW / 10) * i;
-    const y = pad.top + (plotH / 10) * i;
-    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
-  }
-
-  // Axes
-  ctx.strokeStyle = cfg.color + '40';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad.left, pad.top);
-  ctx.lineTo(pad.left, pad.top + plotH);
-  ctx.lineTo(pad.left + plotW, pad.top + plotH);
-  ctx.stroke();
-
-  if (strikeData.length < 2) {
-    // No data message
-    ctx.fillStyle = cfg.color + '60';
-    ctx.font = `${Math.max(9, w * 0.025)}px 'Share Tech Mono', monospace`;
-    ctx.textAlign = 'center';
-    if (currentDefcon >= 4) {
-      ctx.fillText('NO STRIKE DATA', w / 2, h / 2);
-      ctx.fillText('AWAITING SCENARIO', w / 2, h / 2 + 18);
-    } else {
-      ctx.fillText('COLLECTING DATA...', w / 2, h / 2);
-    }
-    ctx.textAlign = 'left';
-    return;
-  }
-
-  const maxMissiles = Math.max(10, ...strikeData.map(d => d.total));
-  const maxImpacts = Math.max(5, ...strikeData.map(d => d.impacts));
-  const maxVal = Math.max(maxMissiles, maxImpacts);
-
-  // Y-axis labels
-  ctx.fillStyle = cfg.color + '80';
-  ctx.font = `${Math.max(7, w * 0.02)}px 'Share Tech Mono', monospace`;
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= 4; i++) {
-    const val = Math.floor(maxVal * (1 - i / 4));
-    const y = pad.top + (plotH / 4) * i;
-    ctx.fillText(val.toString(), pad.left - 4, y + 3);
-  }
-  ctx.textAlign = 'left';
-
-  // Draw missile count line (green)
-  ctx.beginPath();
-  ctx.strokeStyle = '#33ff33cc';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = '#33ff33';
-  ctx.shadowBlur = 3;
-  strikeData.forEach((d, i) => {
-    const x = pad.left + (i / (strikeData.length - 1)) * plotW;
-    const y = pad.top + plotH - (d.total / maxVal) * plotH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Draw impact count line (red)
-  ctx.beginPath();
-  ctx.strokeStyle = '#ff3333cc';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = '#ff3333';
-  ctx.shadowBlur = 3;
-  strikeData.forEach((d, i) => {
-    const x = pad.left + (i / (strikeData.length - 1)) * plotW;
-    const y = pad.top + plotH - (d.impacts / maxVal) * plotH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Legend
-  const legY = pad.top + 10;
-  ctx.fillStyle = '#33ff33';
-  ctx.fillRect(w - pad.right - 90, legY, 8, 2);
-  ctx.fillStyle = '#33ff33cc';
-  ctx.font = `${Math.max(7, w * 0.018)}px 'Share Tech Mono', monospace`;
-  ctx.fillText('LAUNCHED', w - pad.right - 78, legY + 4);
-
-  ctx.fillStyle = '#ff3333';
-  ctx.fillRect(w - pad.right - 90, legY + 14, 8, 2);
-  ctx.fillStyle = '#ff3333cc';
-  ctx.fillText('IMPACTS', w - pad.right - 78, legY + 18);
-
-  // X-axis label
-  ctx.fillStyle = cfg.color + '60';
-  ctx.textAlign = 'center';
-  ctx.fillText('TIME ELAPSED', w / 2, h - 3);
-  ctx.textAlign = 'left';
-}
-
-// ============================================================
-// RESIZE HANDLER
-// ============================================================
-
-function resizeCanvases() {
-  [canvasMain, canvasLeft, canvasRight].forEach(canvas => {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    canvas.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
-  });
-}
-
-// ============================================================
-// CLOCK
-// ============================================================
-
-function updateClock() {
-  const now = new Date();
-  const zulu = now.toISOString().substring(11, 19) + 'Z';
-  document.getElementById('clock').textContent = `ZULU: ${zulu}`;
-  document.getElementById('missile-count').textContent = `TRAJECTORIES: ${totalMissiles}`;
-  document.getElementById('strike-count').textContent = `IMPACTS: ${totalImpacts}`;
-}
-
-// ============================================================
-// MAIN LOOP
-// ============================================================
-
-function gameLoop() {
-  // Launch missiles based on DEFCON
+// ── MAIN LOOP ──
+function loop(){
   launchMissile();
-
-  // Update missiles
-  missiles.forEach(m => m.update());
-
-  // Prune old completed missiles (keep last N based on defcon)
-  const maxKeep = currentDefcon === 1 ? 500 : currentDefcon === 2 ? 200 : 80;
-  if (missiles.length > maxKeep) {
-    missiles = missiles.filter(m => !m.done).concat(
-      missiles.filter(m => m.done).slice(-maxKeep / 2)
-    );
+  missiles.forEach(m=>m.update());
+  const mk=currentDefcon===1?600:currentDefcon===2?250:100;
+  if(missiles.length>mk){
+    missiles=missiles.filter(m=>!m.done).concat(missiles.filter(m=>m.done).slice(-mk/2));
   }
-
-  // Get canvas dimensions
-  const mainRect = canvasMain.parentElement.getBoundingClientRect();
-  const leftRect = canvasLeft.parentElement.getBoundingClientRect();
-  const rightRect = canvasRight.parentElement.getBoundingClientRect();
-
-  // Draw all three displays
-  drawMap(ctxMain, mainRect.width, mainRect.height);
-  drawThreatPanel(ctxLeft, leftRect.width, leftRect.height);
-  drawStrikePanel(ctxRight, rightRect.width, rightRect.height);
-
-  // Update HUD
-  updateClock();
-  renderEventLog();
-
-  requestAnimationFrame(gameLoop);
+  const rs=cvs.map(c=>c.c.parentElement.getBoundingClientRect());
+  drawAlaska(cvs[0].x,rs[0].width,rs[0].height);
+  drawCONUS(cvs[1].x,rs[1].width,rs[1].height);
+  drawSoviet(cvs[2].x,rs[2].width,rs[2].height);
+  drawSAC(cvs[3].x,rs[3].width,rs[3].height);
+  drawAtlantic(cvs[4].x,rs[4].width,rs[4].height);
+  drawGlobal(cvs[5].x,rs[5].width,rs[5].height);
+  updateStatus();renderLog();
+  requestAnimationFrame(loop);
 }
 
-// ============================================================
-// INIT
-// ============================================================
-
-window.addEventListener('resize', resizeCanvases);
-resizeCanvases();
-setDefcon(5);
-gameLoop();
+window.addEventListener('resize',resize);
+resize();setDefcon(5);loop();
 </script>
 </body>
 </html>
