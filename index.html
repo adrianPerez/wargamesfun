@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOPR - Global Thermonuclear War</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #33ff33;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #scanline-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15) 0px,
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  #crt-glow {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.7);
+  }
+
+  #header {
+    text-align: center;
+    padding: 8px 0 4px 0;
+    border-bottom: 1px solid #1a5c1a;
+    position: relative;
+    z-index: 10;
+  }
+
+  #header h1 {
+    font-size: 1.1em;
+    letter-spacing: 6px;
+    color: #33ff33;
+    text-shadow: 0 0 10px #33ff33, 0 0 20px #33ff33;
+  }
+
+  #header .subtitle {
+    font-size: 0.65em;
+    color: #1a8c1a;
+    letter-spacing: 3px;
+    margin-top: 2px;
+  }
+
+  #controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a5c1a;
+    position: relative;
+    z-index: 10;
+  }
+
+  .defcon-btn {
+    padding: 4px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75em;
+    border: 1px solid #333;
+    background: #0a0a0a;
+    color: #666;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+  }
+
+  .defcon-btn:hover {
+    border-color: #555;
+    color: #999;
+  }
+
+  .defcon-btn.active {
+    border-width: 2px;
+  }
+
+  .defcon-5.active { border-color: #3366ff; color: #3366ff; background: #0a0a1a; text-shadow: 0 0 8px #3366ff; }
+  .defcon-4.active { border-color: #33cc33; color: #33cc33; background: #0a1a0a; text-shadow: 0 0 8px #33cc33; }
+  .defcon-3.active { border-color: #cccc00; color: #cccc00; background: #1a1a0a; text-shadow: 0 0 8px #cccc00; }
+  .defcon-2.active { border-color: #ff8800; color: #ff8800; background: #1a0f0a; text-shadow: 0 0 8px #ff8800; }
+  .defcon-1.active { border-color: #ff2222; color: #ff2222; background: #1a0a0a; text-shadow: 0 0 8px #ff2222; animation: pulse-btn 0.8s infinite; }
+
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 5px rgba(255,34,34,0.3); }
+    50% { box-shadow: 0 0 15px rgba(255,34,34,0.6); }
+  }
+
+  #defcon-display {
+    font-size: 0.8em;
+    letter-spacing: 3px;
+    margin-right: 10px;
+  }
+
+  #status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 15px;
+    font-size: 0.6em;
+    color: #1a8c1a;
+    border-bottom: 1px solid #1a5c1a;
+    position: relative;
+    z-index: 10;
+  }
+
+  #displays {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0;
+    height: calc(100vh - 95px);
+    position: relative;
+  }
+
+  .display-panel {
+    position: relative;
+    border: 1px solid #1a3a1a;
+    overflow: hidden;
+  }
+
+  .display-panel .panel-title {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 0.55em;
+    color: #1a8c1a;
+    letter-spacing: 2px;
+    z-index: 5;
+    text-shadow: 0 0 5px rgba(26,140,26,0.5);
+  }
+
+  .display-panel canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #display-main {
+    grid-column: 1 / 3;
+    grid-row: 1 / 2;
+  }
+
+  #display-left {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+  }
+
+  #display-right {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+  }
+
+  #event-log {
+    position: absolute;
+    bottom: 5px;
+    right: 8px;
+    font-size: 0.5em;
+    color: #33ff33;
+    text-align: right;
+    z-index: 5;
+    text-shadow: 0 0 5px rgba(51,255,51,0.3);
+    max-width: 45%;
+  }
+
+  #event-log div {
+    opacity: 0.9;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+
+<div id="scanline-overlay"></div>
+<div id="crt-glow"></div>
+
+<div id="header">
+  <h1>WOPR</h1>
+  <div class="subtitle">WAR OPERATION PLAN RESPONSE</div>
+</div>
+
+<div id="controls">
+  <span id="defcon-display">DEFCON 5</span>
+  <button class="defcon-btn defcon-5 active" onclick="setDefcon(5)">5</button>
+  <button class="defcon-btn defcon-4" onclick="setDefcon(4)">4</button>
+  <button class="defcon-btn defcon-3" onclick="setDefcon(3)">3</button>
+  <button class="defcon-btn defcon-2" onclick="setDefcon(2)">2</button>
+  <button class="defcon-btn defcon-1" onclick="setDefcon(1)">1</button>
+</div>
+
+<div id="status-bar">
+  <span id="clock"></span>
+  <span id="missile-count">TRAJECTORIES: 0</span>
+  <span id="strike-count">IMPACTS: 0</span>
+  <span>NORAD COMMAND CENTER</span>
+</div>
+
+<div id="displays">
+  <div class="display-panel" id="display-main">
+    <span class="panel-title">STRATEGIC DEFENSE - NORTHERN HEMISPHERE</span>
+    <canvas id="canvas-main"></canvas>
+    <div id="event-log"></div>
+  </div>
+  <div class="display-panel" id="display-left">
+    <span class="panel-title">THREAT ASSESSMENT MATRIX</span>
+    <canvas id="canvas-left"></canvas>
+  </div>
+  <div class="display-panel" id="display-right">
+    <span class="panel-title">STRIKE PROBABILITY ANALYSIS</span>
+    <canvas id="canvas-right"></canvas>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// WOPR GLOBAL THERMONUCLEAR WAR SIMULATOR
+// ============================================================
+
+let currentDefcon = 5;
+let missiles = [];
+let impacts = [];
+let totalMissiles = 0;
+let totalImpacts = 0;
+let eventMessages = [];
+let lastMissileTime = 0;
+let warStartTime = 0;
+let strikeData = [];
+let threatLevels = {};
+
+// Canvas refs
+const canvasMain = document.getElementById('canvas-main');
+const canvasLeft = document.getElementById('canvas-left');
+const canvasRight = document.getElementById('canvas-right');
+const ctxMain = canvasMain.getContext('2d');
+const ctxLeft = canvasLeft.getContext('2d');
+const ctxRight = canvasRight.getContext('2d');
+
+// ============================================================
+// MAP DATA - Simplified Northern Hemisphere wireframe
+// ============================================================
+// Rough continent outlines as normalized coords [0-1] for lon/lat mapping
+// Using simplified Miller projection
+
+const continentPaths = {
+  northAmerica: [
+    [0.05,0.28],[0.08,0.22],[0.10,0.18],[0.13,0.15],[0.15,0.13],
+    [0.14,0.18],[0.12,0.22],[0.11,0.28],[0.10,0.32],[0.12,0.35],
+    [0.15,0.38],[0.17,0.42],[0.18,0.48],[0.20,0.52],[0.22,0.55],
+    [0.25,0.56],[0.27,0.55],[0.26,0.50],[0.25,0.45],[0.24,0.40],
+    [0.22,0.35],[0.20,0.30],[0.18,0.26],[0.15,0.25],[0.12,0.27],
+    [0.08,0.28]
+  ],
+  europe: [
+    [0.45,0.18],[0.46,0.22],[0.47,0.25],[0.48,0.28],[0.49,0.32],
+    [0.50,0.35],[0.51,0.38],[0.52,0.40],[0.50,0.42],[0.48,0.40],
+    [0.46,0.38],[0.44,0.36],[0.43,0.33],[0.44,0.30],[0.45,0.27],
+    [0.44,0.24],[0.43,0.20],[0.44,0.18]
+  ],
+  asia: [
+    [0.52,0.15],[0.55,0.18],[0.58,0.20],[0.62,0.22],[0.66,0.25],
+    [0.70,0.28],[0.74,0.30],[0.78,0.32],[0.82,0.35],[0.85,0.38],
+    [0.88,0.35],[0.90,0.32],[0.88,0.28],[0.85,0.25],[0.80,0.22],
+    [0.75,0.20],[0.70,0.18],[0.65,0.16],[0.60,0.15],[0.55,0.14],
+    [0.52,0.15]
+  ],
+  uk: [
+    [0.44,0.24],[0.445,0.26],[0.45,0.28],[0.445,0.30],[0.44,0.28],
+    [0.435,0.26],[0.44,0.24]
+  ],
+  japan: [
+    [0.87,0.32],[0.88,0.35],[0.885,0.38],[0.88,0.40],[0.875,0.38],
+    [0.87,0.35],[0.87,0.32]
+  ],
+  scandinavia: [
+    [0.48,0.12],[0.49,0.15],[0.50,0.18],[0.51,0.22],[0.50,0.20],
+    [0.49,0.17],[0.48,0.14],[0.47,0.12],[0.48,0.12]
+  ]
+};
+
+// Major cities/targets with rough map positions [x%, y%]
+const sovietTargets = [
+  { name: "MOSCOW", x: 0.54, y: 0.26 },
+  { name: "LENINGRAD", x: 0.52, y: 0.21 },
+  { name: "KIEV", x: 0.52, y: 0.30 },
+  { name: "MINSK", x: 0.50, y: 0.27 },
+  { name: "SVERDLOVSK", x: 0.60, y: 0.24 },
+  { name: "NOVOSIBIRSK", x: 0.66, y: 0.25 },
+  { name: "VLADIVOSTOK", x: 0.86, y: 0.34 },
+  { name: "MURMANSK", x: 0.52, y: 0.14 },
+  { name: "KHABAROVSK", x: 0.84, y: 0.30 },
+  { name: "OMSK", x: 0.63, y: 0.25 },
+  { name: "IRKUTSK", x: 0.72, y: 0.28 },
+  { name: "STALINGRAD", x: 0.56, y: 0.32 },
+  { name: "TBILISI", x: 0.56, y: 0.35 },
+  { name: "TASHKENT", x: 0.62, y: 0.35 },
+  { name: "KRASNOYARSK", x: 0.69, y: 0.24 },
+];
+
+const usTargets = [
+  { name: "WASHINGTON DC", x: 0.24, y: 0.38 },
+  { name: "NEW YORK", x: 0.25, y: 0.36 },
+  { name: "LOS ANGELES", x: 0.12, y: 0.45 },
+  { name: "CHICAGO", x: 0.20, y: 0.36 },
+  { name: "HOUSTON", x: 0.17, y: 0.48 },
+  { name: "SEATTLE", x: 0.11, y: 0.32 },
+  { name: "DENVER", x: 0.15, y: 0.38 },
+  { name: "SAN FRANCISCO", x: 0.10, y: 0.40 },
+  { name: "BOSTON", x: 0.26, y: 0.34 },
+  { name: "MIAMI", x: 0.23, y: 0.52 },
+  { name: "OMAHA", x: 0.17, y: 0.37 },
+  { name: "DETROIT", x: 0.22, y: 0.35 },
+  { name: "CHEYENNE MT", x: 0.15, y: 0.39 },
+  { name: "GRAND FORKS", x: 0.17, y: 0.32 },
+  { name: "PEARL HARBOR", x: 0.02, y: 0.52 },
+];
+
+const euroTargets = [
+  { name: "LONDON", x: 0.44, y: 0.27 },
+  { name: "PARIS", x: 0.46, y: 0.30 },
+  { name: "BERLIN", x: 0.48, y: 0.27 },
+  { name: "ROME", x: 0.48, y: 0.36 },
+  { name: "OSLO", x: 0.48, y: 0.18 },
+];
+
+// Soviet launch sites
+const sovietBases = [
+  { x: 0.54, y: 0.24 }, { x: 0.58, y: 0.22 }, { x: 0.62, y: 0.23 },
+  { x: 0.66, y: 0.24 }, { x: 0.70, y: 0.26 }, { x: 0.74, y: 0.28 },
+  { x: 0.56, y: 0.20 }, { x: 0.60, y: 0.26 }, { x: 0.52, y: 0.22 },
+  { x: 0.78, y: 0.30 },
+];
+
+// US launch sites
+const usBases = [
+  { x: 0.15, y: 0.36 }, { x: 0.17, y: 0.34 }, { x: 0.20, y: 0.38 },
+  { x: 0.14, y: 0.40 }, { x: 0.22, y: 0.36 }, { x: 0.12, y: 0.38 },
+  { x: 0.18, y: 0.32 }, { x: 0.16, y: 0.38 },
+];
+
+// ============================================================
+// MISSILE CLASS
+// ============================================================
+
+class Missile {
+  constructor(from, to, color, speed) {
+    this.fromX = from.x;
+    this.fromY = from.y;
+    this.toX = to.x;
+    this.toY = to.y;
+    this.targetName = to.name || "UNKNOWN";
+    this.color = color;
+    this.progress = 0;
+    this.speed = speed || (0.002 + Math.random() * 0.004);
+    this.done = false;
+    this.impacted = false;
+    this.arcHeight = 0.08 + Math.random() * 0.12;
+    this.trail = [];
+  }
+
+  update() {
+    if (this.done) return;
+    this.progress += this.speed;
+    if (this.progress >= 1) {
+      this.progress = 1;
+      this.done = true;
+      if (!this.impacted) {
+        this.impacted = true;
+        totalImpacts++;
+        impacts.push({
+          x: this.toX, y: this.toY,
+          time: Date.now(), radius: 0, name: this.targetName,
+          color: this.color
+        });
+      }
+    }
+    // Store trail points
+    const pos = this.getPosition(this.progress);
+    this.trail.push(pos);
+    if (this.trail.length > 60) this.trail.shift();
+  }
+
+  getPosition(t) {
+    const x = this.fromX + (this.toX - this.fromX) * t;
+    const arc = Math.sin(t * Math.PI) * this.arcHeight;
+    const y = this.fromY + (this.toY - this.fromY) * t - arc;
+    return { x, y };
+  }
+
+  draw(ctx, w, h) {
+    // Draw the full trajectory arc as a thin line
+    ctx.beginPath();
+    ctx.strokeStyle = this.color + '40';
+    ctx.lineWidth = 0.5;
+    for (let t = 0; t <= Math.min(this.progress, 1); t += 0.02) {
+      const pos = this.getPosition(t);
+      if (t === 0) ctx.moveTo(pos.x * w, pos.y * h);
+      else ctx.lineTo(pos.x * w, pos.y * h);
+    }
+    ctx.stroke();
+
+    // Draw brighter trail near the head
+    if (!this.done) {
+      const trailLen = Math.min(this.trail.length, 15);
+      for (let i = this.trail.length - trailLen; i < this.trail.length; i++) {
+        const alpha = (i - (this.trail.length - trailLen)) / trailLen;
+        ctx.beginPath();
+        ctx.fillStyle = this.color + Math.floor(alpha * 200).toString(16).padStart(2, '0');
+        ctx.arc(this.trail[i].x * w, this.trail[i].y * h, 1 + alpha * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw missile head
+      const head = this.getPosition(this.progress);
+      ctx.beginPath();
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 6;
+      ctx.arc(head.x * w, head.y * h, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+}
+
+// ============================================================
+// DEFCON CONFIGURATION
+// ============================================================
+
+const defconConfig = {
+  5: { missileRate: 0, label: "PEACE", color: "#3366ff", bgFlicker: false },
+  4: { missileRate: 0, label: "INCREASED READINESS", color: "#33cc33", bgFlicker: false },
+  3: { missileRate: 2000, label: "ROUND HOUSE", color: "#cccc00", bgFlicker: false },
+  2: { missileRate: 600, label: "FAST PACE", color: "#ff8800", bgFlicker: false },
+  1: { missileRate: 120, label: "COCKED PISTOL", color: "#ff2222", bgFlicker: true },
+};
+
+// ============================================================
+// DEFCON CONTROL
+// ============================================================
+
+function setDefcon(level) {
+  currentDefcon = level;
+
+  // Update buttons
+  document.querySelectorAll('.defcon-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`.defcon-${level}`).classList.add('active');
+
+  // Update display
+  const cfg = defconConfig[level];
+  const dd = document.getElementById('defcon-display');
+  dd.textContent = `DEFCON ${level}`;
+  dd.style.color = cfg.color;
+  dd.style.textShadow = `0 0 10px ${cfg.color}`;
+
+  if (level <= 3) {
+    warStartTime = Date.now();
+    addEvent(`DEFCON ${level} — ${cfg.label}`);
+  }
+
+  if (level === 3) {
+    addEvent("EARLY WARNING SATELLITES ACTIVE");
+    addEvent("MONITORING ICBM FIELDS");
+  } else if (level === 2) {
+    addEvent("MULTIPLE LAUNCH DETECTIONS");
+    addEvent("STRATEGIC AIR COMMAND ALERTED");
+    addEvent("BOMBER WINGS SCRAMBLED");
+  } else if (level === 1) {
+    addEvent("MASSIVE FIRST STRIKE DETECTED");
+    addEvent("RETALIATORY LAUNCH AUTHORIZED");
+    addEvent("ALL ASSETS WEAPONS FREE");
+  }
+
+  if (level >= 4) {
+    missiles = [];
+    impacts = [];
+    totalMissiles = 0;
+    totalImpacts = 0;
+    strikeData = [];
+    eventMessages = [];
+    if (level === 5) addEvent("SYSTEM READY — NO THREATS DETECTED");
+    if (level === 4) addEvent("ELEVATED ALERT — MONITORING");
+  }
+}
+
+// ============================================================
+// EVENT LOG
+// ============================================================
+
+function addEvent(msg) {
+  eventMessages.unshift({ text: msg, time: Date.now() });
+  if (eventMessages.length > 8) eventMessages.pop();
+}
+
+function renderEventLog() {
+  const el = document.getElementById('event-log');
+  el.innerHTML = eventMessages.map((e, i) => {
+    const age = Date.now() - e.time;
+    const opacity = Math.max(0.3, 1 - age / 15000);
+    return `<div style="opacity:${opacity}">${e.text}</div>`;
+  }).join('');
+}
+
+// ============================================================
+// LAUNCH MISSILES
+// ============================================================
+
+function launchMissile() {
+  const cfg = defconConfig[currentDefcon];
+  if (cfg.missileRate === 0) return;
+
+  const now = Date.now();
+  if (now - lastMissileTime < cfg.missileRate) return;
+  lastMissileTime = now;
+
+  // Determine launch count based on defcon
+  const count = currentDefcon === 1 ? Math.floor(2 + Math.random() * 5) :
+                currentDefcon === 2 ? Math.floor(1 + Math.random() * 3) : 1;
+
+  for (let i = 0; i < count; i++) {
+    const side = Math.random() < 0.5 ? 'soviet' : 'us';
+    let from, to, color;
+
+    if (side === 'soviet') {
+      from = sovietBases[Math.floor(Math.random() * sovietBases.length)];
+      const allTargets = [...usTargets, ...euroTargets];
+      to = allTargets[Math.floor(Math.random() * allTargets.length)];
+      color = '#ff3333';
+    } else {
+      from = usBases[Math.floor(Math.random() * usBases.length)];
+      to = sovietTargets[Math.floor(Math.random() * sovietTargets.length)];
+      color = '#33ff33';
+    }
+
+    const m = new Missile(from, to, color, 0.003 + Math.random() * 0.005);
+    missiles.push(m);
+    totalMissiles++;
+
+    // Occasional event message
+    if (Math.random() < 0.15) {
+      const verb = side === 'soviet' ? 'INBOUND' : 'OUTBOUND';
+      addEvent(`${verb} ICBM — TGT: ${to.name}`);
+    }
+  }
+
+  // Track strike data for graphs
+  strikeData.push({ time: now, total: totalMissiles, impacts: totalImpacts });
+  if (strikeData.length > 200) strikeData.shift();
+}
+
+// ============================================================
+// DRAW MAIN MAP
+// ============================================================
+
+function drawMap(ctx, w, h) {
+  ctx.clearRect(0, 0, w, h);
+
+  // Background flicker at DEFCON 1
+  if (currentDefcon === 1 && Math.random() < 0.03) {
+    ctx.fillStyle = 'rgba(255,0,0,0.02)';
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Draw grid lines
+  ctx.strokeStyle = '#0a1a0a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 20; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * w / 20, 0);
+    ctx.lineTo(i * w / 20, h);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * h / 20);
+    ctx.lineTo(w, i * h / 20);
+    ctx.stroke();
+  }
+
+  // Draw continents
+  const mapColor = defconConfig[currentDefcon].color;
+  ctx.strokeStyle = mapColor + '50';
+  ctx.lineWidth = 1.2;
+  Object.values(continentPaths).forEach(path => {
+    ctx.beginPath();
+    path.forEach((p, i) => {
+      if (i === 0) ctx.moveTo(p[0] * w, p[1] * h);
+      else ctx.lineTo(p[0] * w, p[1] * h);
+    });
+    ctx.stroke();
+  });
+
+  // Draw targets as dots
+  const drawTargets = (targets, color) => {
+    targets.forEach(t => {
+      ctx.beginPath();
+      ctx.fillStyle = color + '60';
+      ctx.arc(t.x * w, t.y * h, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Show name for impacted targets
+      const impacted = impacts.find(imp => imp.name === t.name);
+      if (impacted) {
+        ctx.fillStyle = color + 'aa';
+        ctx.font = `${Math.max(8, w * 0.012)}px 'Share Tech Mono', monospace`;
+        ctx.fillText(t.name, t.x * w + 5, t.y * h - 5);
+      }
+    });
+  };
+
+  drawTargets([...usTargets, ...euroTargets], '#ff3333');
+  drawTargets(sovietTargets, '#33ff33');
+
+  // Draw launch bases
+  const drawBases = (bases, color) => {
+    bases.forEach(b => {
+      ctx.beginPath();
+      ctx.strokeStyle = color + '30';
+      ctx.lineWidth = 0.5;
+      const s = 3;
+      ctx.moveTo(b.x * w - s, b.y * h - s);
+      ctx.lineTo(b.x * w + s, b.y * h + s);
+      ctx.moveTo(b.x * w + s, b.y * h - s);
+      ctx.lineTo(b.x * w - s, b.y * h + s);
+      ctx.stroke();
+    });
+  };
+
+  if (currentDefcon <= 3) {
+    drawBases(sovietBases, '#ff3333');
+    drawBases(usBases, '#33ff33');
+  }
+
+  // Draw missiles
+  missiles.forEach(m => m.draw(ctx, w, h));
+
+  // Draw impacts
+  impacts.forEach(imp => {
+    const age = Date.now() - imp.time;
+    if (age < 4000) {
+      const r = Math.min(age / 100, 20);
+      const alpha = Math.max(0, 1 - age / 4000);
+
+      // Expanding ring
+      ctx.beginPath();
+      ctx.strokeStyle = imp.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+      ctx.lineWidth = 1;
+      ctx.arc(imp.x * w, imp.y * h, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Flash
+      if (age < 300) {
+        ctx.beginPath();
+        ctx.fillStyle = '#ffffff' + Math.floor((1 - age / 300) * 180).toString(16).padStart(2, '0');
+        ctx.arc(imp.x * w, imp.y * h, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Persistent glow
+      ctx.beginPath();
+      ctx.fillStyle = imp.color + '15';
+      ctx.arc(imp.x * w, imp.y * h, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+// ============================================================
+// DRAW THREAT ASSESSMENT (Bottom Left)
+// ============================================================
+
+function drawThreatPanel(ctx, w, h) {
+  ctx.clearRect(0, 0, w, h);
+
+  const cfg = defconConfig[currentDefcon];
+  const pad = { top: 25, bottom: 15, left: 15, right: 15 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = '#0a1a0a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 10; i++) {
+    const x = pad.left + (plotW / 10) * i;
+    const y = pad.top + (plotH / 10) * i;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = cfg.color + '40';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + plotH);
+  ctx.lineTo(pad.left + plotW, pad.top + plotH);
+  ctx.stroke();
+
+  // Regions / threat bars
+  const regions = [
+    { name: "CONUS", threat: 0 },
+    { name: "EUR", threat: 0 },
+    { name: "PAC", threat: 0 },
+    { name: "USSR", threat: 0 },
+    { name: "SLBM", threat: 0 },
+    { name: "SAC", threat: 0 },
+  ];
+
+  // Calculate threat levels
+  if (currentDefcon <= 3) {
+    const elapsed = (Date.now() - warStartTime) / 1000;
+    const maxThreat = currentDefcon === 1 ? 0.95 : currentDefcon === 2 ? 0.7 : 0.35;
+    regions[0].threat = Math.min(maxThreat, elapsed * 0.01 * (6 - currentDefcon) + Math.sin(elapsed * 0.5) * 0.05);
+    regions[1].threat = Math.min(maxThreat, elapsed * 0.008 * (6 - currentDefcon) + Math.sin(elapsed * 0.7) * 0.04);
+    regions[2].threat = Math.min(maxThreat * 0.7, elapsed * 0.006 * (6 - currentDefcon) + Math.sin(elapsed * 0.3) * 0.03);
+    regions[3].threat = Math.min(maxThreat, elapsed * 0.012 * (6 - currentDefcon) + Math.sin(elapsed * 0.6) * 0.06);
+    regions[4].threat = Math.min(maxThreat * 0.8, elapsed * 0.009 * (6 - currentDefcon) + Math.cos(elapsed * 0.4) * 0.04);
+    regions[5].threat = Math.min(maxThreat * 0.6, elapsed * 0.007 * (6 - currentDefcon) + Math.sin(elapsed * 0.8) * 0.03);
+    regions.forEach(r => r.threat = Math.max(0, r.threat));
+  }
+
+  const barW = plotW / regions.length - 8;
+
+  regions.forEach((r, i) => {
+    const x = pad.left + (plotW / regions.length) * i + 4;
+    const barH = r.threat * plotH;
+    const y = pad.top + plotH - barH;
+
+    // Bar color based on threat
+    let barColor;
+    if (r.threat > 0.7) barColor = '#ff2222';
+    else if (r.threat > 0.4) barColor = '#ff8800';
+    else if (r.threat > 0.1) barColor = '#cccc00';
+    else barColor = '#33cc33';
+
+    // Bar glow
+    ctx.fillStyle = barColor + '20';
+    ctx.fillRect(x, y, barW, barH);
+
+    // Bar outline
+    ctx.strokeStyle = barColor + 'aa';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, barW, barH);
+
+    // Scanning line effect
+    if (currentDefcon <= 3) {
+      const scanY = pad.top + (Date.now() / 20 % plotH);
+      if (scanY >= y && scanY <= y + barH) {
+        ctx.fillStyle = barColor + '40';
+        ctx.fillRect(x, scanY - 1, barW, 2);
+      }
+    }
+
+    // Label
+    ctx.fillStyle = cfg.color + 'cc';
+    ctx.font = `${Math.max(8, w * 0.025)}px 'Share Tech Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(r.name, x + barW / 2, pad.top + plotH + 12);
+
+    // Percentage
+    if (r.threat > 0) {
+      ctx.fillStyle = barColor;
+      ctx.fillText(Math.floor(r.threat * 100) + '%', x + barW / 2, y - 4);
+    }
+  });
+
+  ctx.textAlign = 'left';
+
+  // DEFCON indicator
+  ctx.fillStyle = cfg.color;
+  ctx.font = `${Math.max(10, w * 0.03)}px 'Share Tech Mono', monospace`;
+  ctx.textAlign = 'right';
+  ctx.fillText(`DEFCON ${currentDefcon}`, w - pad.right, pad.top + 15);
+
+  if (currentDefcon <= 3) {
+    ctx.fillStyle = cfg.color + '88';
+    ctx.font = `${Math.max(8, w * 0.022)}px 'Share Tech Mono', monospace`;
+    ctx.fillText(cfg.label, w - pad.right, pad.top + 30);
+  }
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// DRAW STRIKE ANALYSIS (Bottom Right)
+// ============================================================
+
+function drawStrikePanel(ctx, w, h) {
+  ctx.clearRect(0, 0, w, h);
+
+  const cfg = defconConfig[currentDefcon];
+  const pad = { top: 25, bottom: 20, left: 40, right: 15 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = '#0a1a0a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 10; i++) {
+    const x = pad.left + (plotW / 10) * i;
+    const y = pad.top + (plotH / 10) * i;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = cfg.color + '40';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + plotH);
+  ctx.lineTo(pad.left + plotW, pad.top + plotH);
+  ctx.stroke();
+
+  if (strikeData.length < 2) {
+    // No data message
+    ctx.fillStyle = cfg.color + '60';
+    ctx.font = `${Math.max(9, w * 0.025)}px 'Share Tech Mono', monospace`;
+    ctx.textAlign = 'center';
+    if (currentDefcon >= 4) {
+      ctx.fillText('NO STRIKE DATA', w / 2, h / 2);
+      ctx.fillText('AWAITING SCENARIO', w / 2, h / 2 + 18);
+    } else {
+      ctx.fillText('COLLECTING DATA...', w / 2, h / 2);
+    }
+    ctx.textAlign = 'left';
+    return;
+  }
+
+  const maxMissiles = Math.max(10, ...strikeData.map(d => d.total));
+  const maxImpacts = Math.max(5, ...strikeData.map(d => d.impacts));
+  const maxVal = Math.max(maxMissiles, maxImpacts);
+
+  // Y-axis labels
+  ctx.fillStyle = cfg.color + '80';
+  ctx.font = `${Math.max(7, w * 0.02)}px 'Share Tech Mono', monospace`;
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = Math.floor(maxVal * (1 - i / 4));
+    const y = pad.top + (plotH / 4) * i;
+    ctx.fillText(val.toString(), pad.left - 4, y + 3);
+  }
+  ctx.textAlign = 'left';
+
+  // Draw missile count line (green)
+  ctx.beginPath();
+  ctx.strokeStyle = '#33ff33cc';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#33ff33';
+  ctx.shadowBlur = 3;
+  strikeData.forEach((d, i) => {
+    const x = pad.left + (i / (strikeData.length - 1)) * plotW;
+    const y = pad.top + plotH - (d.total / maxVal) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Draw impact count line (red)
+  ctx.beginPath();
+  ctx.strokeStyle = '#ff3333cc';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#ff3333';
+  ctx.shadowBlur = 3;
+  strikeData.forEach((d, i) => {
+    const x = pad.left + (i / (strikeData.length - 1)) * plotW;
+    const y = pad.top + plotH - (d.impacts / maxVal) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Legend
+  const legY = pad.top + 10;
+  ctx.fillStyle = '#33ff33';
+  ctx.fillRect(w - pad.right - 90, legY, 8, 2);
+  ctx.fillStyle = '#33ff33cc';
+  ctx.font = `${Math.max(7, w * 0.018)}px 'Share Tech Mono', monospace`;
+  ctx.fillText('LAUNCHED', w - pad.right - 78, legY + 4);
+
+  ctx.fillStyle = '#ff3333';
+  ctx.fillRect(w - pad.right - 90, legY + 14, 8, 2);
+  ctx.fillStyle = '#ff3333cc';
+  ctx.fillText('IMPACTS', w - pad.right - 78, legY + 18);
+
+  // X-axis label
+  ctx.fillStyle = cfg.color + '60';
+  ctx.textAlign = 'center';
+  ctx.fillText('TIME ELAPSED', w / 2, h - 3);
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// RESIZE HANDLER
+// ============================================================
+
+function resizeCanvases() {
+  [canvasMain, canvasLeft, canvasRight].forEach(canvas => {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    canvas.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+  });
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+
+function updateClock() {
+  const now = new Date();
+  const zulu = now.toISOString().substring(11, 19) + 'Z';
+  document.getElementById('clock').textContent = `ZULU: ${zulu}`;
+  document.getElementById('missile-count').textContent = `TRAJECTORIES: ${totalMissiles}`;
+  document.getElementById('strike-count').textContent = `IMPACTS: ${totalImpacts}`;
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+
+function gameLoop() {
+  // Launch missiles based on DEFCON
+  launchMissile();
+
+  // Update missiles
+  missiles.forEach(m => m.update());
+
+  // Prune old completed missiles (keep last N based on defcon)
+  const maxKeep = currentDefcon === 1 ? 500 : currentDefcon === 2 ? 200 : 80;
+  if (missiles.length > maxKeep) {
+    missiles = missiles.filter(m => !m.done).concat(
+      missiles.filter(m => m.done).slice(-maxKeep / 2)
+    );
+  }
+
+  // Get canvas dimensions
+  const mainRect = canvasMain.parentElement.getBoundingClientRect();
+  const leftRect = canvasLeft.parentElement.getBoundingClientRect();
+  const rightRect = canvasRight.parentElement.getBoundingClientRect();
+
+  // Draw all three displays
+  drawMap(ctxMain, mainRect.width, mainRect.height);
+  drawThreatPanel(ctxLeft, leftRect.width, leftRect.height);
+  drawStrikePanel(ctxRight, rightRect.width, rightRect.height);
+
+  // Update HUD
+  updateClock();
+  renderEventLog();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+setDefcon(5);
+gameLoop();
+</script>
+</body>
+</html>
