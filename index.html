@@ -9,7 +9,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: #000008;
-    color: #5599ff;
+    color: #77bbff;
     font-family: 'Share Tech Mono', 'Courier New', monospace;
     overflow: hidden;
     height: 100vh; width: 100vw;
@@ -31,29 +31,30 @@
   .panel {
     position: relative; overflow: hidden;
     background: #000010;
-    border: 2px solid rgba(140,170,220,0.4);
+    border: 2px solid rgba(100,170,255,0.5);
     border-radius: 5px;
-    box-shadow: 0 0 12px rgba(60,100,180,0.15),
+    box-shadow: 0 0 18px rgba(60,130,255,0.25),
+                0 0 4px rgba(100,170,255,0.4),
                 inset 0 0 40px rgba(0,5,20,0.6);
   }
   .panel canvas { width: 100%; height: 100%; display: block; }
   .panel-label {
     position: absolute; top: 5px; left: 8px;
-    font-size: 0.5em; color: #5599ff; letter-spacing: 2px;
-    z-index: 5; text-shadow: 0 0 6px rgba(85,153,255,0.5);
+    font-size: 0.5em; color: #88ccff; letter-spacing: 2px;
+    z-index: 5; text-shadow: 0 0 8px rgba(100,180,255,0.7);
     line-height: 1.4;
   }
-  .panel-label .sub { color: #3366aa; }
+  .panel-label .sub { color: #5599cc; }
   #status-bar {
     grid-column: 1 / 4;
     display: flex; align-items: center; justify-content: center;
     gap: 6px; padding: 2px 10px;
     background: #000010;
-    border-top: 1px solid rgba(140,170,220,0.25);
-    border-bottom: 1px solid rgba(140,170,220,0.25);
+    border-top: 1px solid rgba(100,170,255,0.35);
+    border-bottom: 1px solid rgba(100,170,255,0.35);
     min-height: 26px; flex-wrap: wrap;
   }
-  .sbl { color: #336699; font-size: 0.5em; letter-spacing: 1px; }
+  .sbl { color: #5599cc; font-size: 0.5em; letter-spacing: 1px; }
   .sbk { width: 16px; height: 8px; display: inline-block; vertical-align: middle; }
   .defcon-btn {
     padding: 1px 8px;
@@ -78,12 +79,12 @@
     50% { box-shadow: 0 0 12px rgba(255,68,68,0.6); }
   }
   .cg { display: flex; align-items: center; gap: 3px; font-size: 0.55em; margin-left: 6px; }
-  .cg .cl { color: #336699; font-size: 0.85em; }
-  .cg .cv { color: #77bbff; letter-spacing: 1px; }
+  .cg .cl { color: #5599cc; font-size: 0.85em; }
+  .cg .cv { color: #99ddff; letter-spacing: 1px; }
   #event-log {
     position: absolute; bottom: 4px; left: 8px;
-    font-size: 0.42em; color: #5599ff; z-index: 5;
-    text-shadow: 0 0 4px rgba(85,153,255,0.3);
+    font-size: 0.42em; color: #88ccff; z-index: 5;
+    text-shadow: 0 0 6px rgba(100,180,255,0.5);
     max-width: 55%;
   }
   #event-log div { margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -124,7 +125,7 @@
 // ============================================================
 // WOPR GLOBAL THERMONUCLEAR WAR SIMULATOR
 // ============================================================
-const BLUE='#4488ff',BLUE_B='#77bbff',BLUE_D='#1a3366',RED='#ff3366',RED_D='#661133',WHITE='#ccddff',CYAN='#44ccff';
+const BLUE='#66aaff',BLUE_B='#99ddff',BLUE_D='#2255aa',RED='#ff4488',RED_D='#882244',WHITE='#eeeeff',CYAN='#66eeff';
 let currentDefcon=5,missiles=[],impacts=[],totalMissiles=0,totalImpacts=0,
     eventMessages=[],lastMissileTime=0,warStartTime=0,strikeData=[];
 const cvs=[0,1,2,3,4,5].map(i=>{const c=document.getElementById('c'+i);return{c,x:c.getContext('2d')};});
@@ -241,30 +242,34 @@ class Missile {
       const inv=p=>p.x<vb.x-0.05||p.x>vb.x+vb.w+0.05||p.y<vb.y-0.05||p.y>vb.y+vb.h+0.05;
       if(inv(a)&&inv(b)&&inv(c))return;
     }
-    // Arc line
-    ctx.beginPath();
-    ctx.strokeStyle=this.color+(bright?'55':'28');
-    ctx.lineWidth=bright?1.2:0.6;
-    let s=false;
-    for(let t=0;t<=Math.min(this.progress,1);t+=0.02){
+    const lw=bright?1.4:0.8;
+    const dashLen=bright?4:3;const gapLen=bright?6:5;
+    // Glow layer (wider, blurred)
+    ctx.save();
+    ctx.shadowColor=this.color;ctx.shadowBlur=bright?12:6;
+    ctx.strokeStyle=this.color+'60';ctx.lineWidth=lw+2;
+    ctx.setLineDash([dashLen,gapLen]);
+    ctx.beginPath();let s=false;
+    for(let t=0;t<=Math.min(this.progress,1);t+=0.015){
       const p=this.pos(t);const[sx,sy]=ts(p.x,p.y);
       if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);
     }
-    ctx.stroke();
-    // Head
+    ctx.stroke();ctx.restore();
+    // Crisp dotted arc on top
+    ctx.strokeStyle=this.color+(bright?'cc':'88');ctx.lineWidth=lw;
+    ctx.setLineDash([dashLen,gapLen]);
+    ctx.beginPath();s=false;
+    for(let t=0;t<=Math.min(this.progress,1);t+=0.015){
+      const p=this.pos(t);const[sx,sy]=ts(p.x,p.y);
+      if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();ctx.setLineDash([]);
+    // Small glow dot at the leading edge (not a big moving head)
     if(!this.done){
-      const tl=Math.min(this.trail.length,10);
-      for(let i=this.trail.length-tl;i<this.trail.length;i++){
-        const a=(i-(this.trail.length-tl))/tl;
-        const[sx,sy]=ts(this.trail[i].x,this.trail[i].y);
-        ctx.beginPath();
-        ctx.fillStyle=WHITE+Math.floor(a*160).toString(16).padStart(2,'0');
-        ctx.arc(sx,sy,(bright?1.2:0.6)+a*1.2,0,Math.PI*2);ctx.fill();
-      }
       const p=this.pos(this.progress);const[hx,hy]=ts(p.x,p.y);
-      ctx.beginPath();ctx.fillStyle=WHITE;
-      ctx.shadowColor=this.color;ctx.shadowBlur=bright?8:4;
-      ctx.arc(hx,hy,bright?2.5:1.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+      ctx.save();ctx.shadowColor=this.color;ctx.shadowBlur=bright?10:5;
+      ctx.fillStyle=WHITE;ctx.beginPath();
+      ctx.arc(hx,hy,bright?2:1.2,0,Math.PI*2);ctx.fill();ctx.restore();
     }
   }
 }
@@ -322,19 +327,35 @@ function launchMissile(){
 
 // ── DRAWING HELPERS ──
 function drawGrid(ctx,w,h,n,c){
-  ctx.strokeStyle=c||'#0a0f1a';ctx.lineWidth=0.5;
+  const gc=c||'#0d1428';
+  // Glow pass
+  ctx.save();ctx.shadowColor=gc;ctx.shadowBlur=4;
+  ctx.strokeStyle=gc;ctx.lineWidth=0.8;
   for(let i=0;i<=n;i++){
     ctx.beginPath();ctx.moveTo(i*w/n,0);ctx.lineTo(i*w/n,h);ctx.stroke();
     ctx.beginPath();ctx.moveTo(0,i*h/n);ctx.lineTo(w,i*h/n);ctx.stroke();
   }
+  ctx.restore();
 }
 
 function drawCoast(ctx,w,h,vb,fc,ec){
   continentPaths.forEach((path,idx)=>{
     const isSov=sovPaths.has(idx);
-    ctx.strokeStyle=isSov?(ec||RED_D):(fc||BLUE_D);
-    ctx.lineWidth=isSov?1.3:1;
+    const col=isSov?(ec||RED_D):(fc||BLUE_D);
+    // Glow pass
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.strokeStyle=col;ctx.lineWidth=isSov?2:1.5;
     ctx.beginPath();let s=false;
+    path.forEach(p=>{
+      let sx,sy;
+      if(vb){sx=(p[0]-vb.x)/vb.w*w;sy=(p[1]-vb.y)/vb.h*h;}
+      else{sx=p[0]*w;sy=p[1]*h;}
+      if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);
+    });
+    ctx.stroke();ctx.restore();
+    // Bright core pass
+    ctx.strokeStyle=col;ctx.lineWidth=isSov?1.3:1;
+    ctx.beginPath();s=false;
     path.forEach(p=>{
       let sx,sy;
       if(vb){sx=(p[0]-vb.x)/vb.w*w;sy=(p[1]-vb.y)/vb.h*h;}
@@ -346,13 +367,16 @@ function drawCoast(ctx,w,h,vb,fc,ec){
 }
 
 function drawSquares(ctx,tgts,w,h,vb,color,sz){
-  const s=sz||3;ctx.strokeStyle=color;ctx.lineWidth=1;
+  const s=sz||3;
+  ctx.save();ctx.shadowColor=color;ctx.shadowBlur=6;
+  ctx.strokeStyle=color;ctx.lineWidth=1.2;
   tgts.forEach(t=>{
     let sx,sy;
     if(vb){sx=(t.x-vb.x)/vb.w*w;sy=(t.y-vb.y)/vb.h*h;if(sx<-10||sx>w+10||sy<-10||sy>h+10)return;}
     else{sx=t.x*w;sy=t.y*h;}
     ctx.strokeRect(sx-s,sy-s,s*2,s*2);
   });
+  ctx.restore();
 }
 
 function drawImpacts(ctx,w,h,vb){
@@ -361,13 +385,24 @@ function drawImpacts(ctx,w,h,vb){
     if(vb){sx=(imp.x-vb.x)/vb.w*w;sy=(imp.y-vb.y)/vb.h*h;if(sx<-20||sx>w+20||sy<-20||sy>h+20)return;}
     else{sx=imp.x*w;sy=imp.y*h;}
     const age=Date.now()-imp.time;
+    ctx.save();
     if(age<3000){
       const r=Math.min(age/80,20),a=Math.max(0,1-age/3000);
-      ctx.beginPath();ctx.strokeStyle=imp.color+Math.floor(a*200).toString(16).padStart(2,'0');
-      ctx.lineWidth=1.5;ctx.arc(sx,sy,r,0,Math.PI*2);ctx.stroke();
-      if(age<200){ctx.beginPath();ctx.fillStyle='#ffffff'+Math.floor((1-age/200)*200).toString(16).padStart(2,'0');
-        ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fill();}
-    }else{ctx.beginPath();ctx.fillStyle=(imp.color||RED)+'18';ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();}
+      const hex=Math.floor(a*220).toString(16).padStart(2,'0');
+      ctx.shadowColor=imp.color;ctx.shadowBlur=12*a;
+      ctx.beginPath();ctx.strokeStyle=imp.color+hex;
+      ctx.lineWidth=2;ctx.arc(sx,sy,r,0,Math.PI*2);ctx.stroke();
+      if(age<400){
+        const fa=1-age/400;
+        ctx.shadowBlur=20*fa;ctx.shadowColor='#ffffff';
+        ctx.beginPath();ctx.fillStyle='#ffffff'+Math.floor(fa*240).toString(16).padStart(2,'0');
+        ctx.arc(sx,sy,6*(1-age/400)+2,0,Math.PI*2);ctx.fill();
+      }
+    }else{
+      ctx.shadowColor=imp.color;ctx.shadowBlur=4;
+      ctx.beginPath();ctx.fillStyle=(imp.color||RED)+'25';ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
   });
 }
 
@@ -381,9 +416,11 @@ function drawAlaska(ctx,w,h){
   const cx=w*0.35,cy=h*0.55;
   ctx.beginPath();ctx.moveTo(cx,cy);
   ctx.arc(cx,cy,Math.max(w,h),sa,sa+0.15);ctx.closePath();
-  ctx.fillStyle='rgba(68,136,255,0.04)';ctx.fill();
-  ctx.strokeStyle=BLUE_D+'40';ctx.lineWidth=0.5;
+  ctx.fillStyle='rgba(80,160,255,0.06)';ctx.fill();
+  ctx.save();ctx.shadowColor=BLUE_D;ctx.shadowBlur=6;
+  ctx.strokeStyle=BLUE_D+'70';ctx.lineWidth=0.7;
   for(let r=1;r<=4;r++){ctx.beginPath();ctx.arc(cx,cy,r*w*0.2,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
   drawCoast(ctx,w,h,vb,BLUE_D,RED_D);
   if(currentDefcon<=3){missiles.forEach(m=>m.draw(ctx,w,h,vb,true));drawImpacts(ctx,w,h,vb);}
 }
