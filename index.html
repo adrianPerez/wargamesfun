@@ -201,14 +201,22 @@ const sacBases=[
 ];
 
 // ── SVG MAP CROP RECTS (in SVG coordinate space) ──
-// Empirically tuned to match panel viewports
+// Calibrated from country bounding boxes via svgpathtools
 const mapCrops={
-  alaska: {x:20,y:258,w:120,h:100},    // lon ~-175 to -140, lat ~50-72
-  conus:  {x:75,y:340,w:200,h:130},     // lon ~-130 to -60, lat ~22-52
-  soviet: {x:430,y:265,w:400,h:190},    // lon ~20 to 175, lat ~30-75
-  sac:    {x:100,y:340,w:110,h:85},     // lon ~-115 to -85, lat ~30-52
-  atlantic:{x:170,y:310,w:230,h:155},   // lon ~-85 to -20, lat ~25-65
-  global: {x:SVB.x,y:SVB.y,w:SVB.w,h:SVB.h},
+  alaska:  {x:6,y:310,w:104,h:66},      // lon -175 to -130, lat 52-73
+  conus:   {x:110,y:377,w:161,h:95},     // lon -130 to -60, lat 22-52
+  soviet:  {x:443,y:301,w:368,h:145},    // lon 15 to 175, lat 30-76
+  sac:     {x:144,y:377,w:76,h:76},      // lon -115 to -82, lat 28-52
+  atlantic:{x:213,y:326,w:207,h:120},    // lon -85 to 5, lat 30-68
+  global:  {x:SVB.x,y:SVB.y,w:SVB.w,h:SVB.h},
+};
+// Geo viewboxes matching the crop rects (for missiles/targets/bases)
+const panelVB={
+  alaska:  {x:geo(-175,0)[0],y:geo(0,73)[1],w:0.1216,h:0.2100},
+  conus:   {x:geo(-130,0)[0],y:geo(0,52)[1],w:0.1892,h:0.3000},
+  soviet:  {x:geo(15,0)[0],y:geo(0,76)[1],w:0.4324,h:0.4600},
+  sac:     {x:geo(-115,0)[0],y:geo(0,52)[1],w:0.0892,h:0.2400},
+  atlantic:{x:geo(-85,0)[0],y:geo(0,68)[1],w:0.2432,h:0.3800},
 };
 
 // ── MISSILE ──
@@ -465,7 +473,7 @@ function buildBG_Alaska(ctx,w,h){
 }
 
 function buildBG_CONUS(ctx,w,h){
-  const vb={x:geo(-130,0)[0],y:geo(0,52)[1],w:0.22,h:0.32};
+  const vb=panelVB.conus;
   drawMapRegion(ctx,w,h,'conus');
   for(let lon=-120;lon<=-70;lon+=10){
     const sx=(geo(lon,0)[0]-vb.x)/vb.w*w;
@@ -498,7 +506,7 @@ function buildBG_CONUS(ctx,w,h){
 }
 
 function buildBG_Soviet(ctx,w,h){
-  const vb={x:geo(20,0)[0],y:geo(0,75)[1],w:0.42,h:0.50};
+  const vb=panelVB.soviet;
   drawMapRegion(ctx,w,h,'soviet');
   drawSquaresStatic(ctx,sovietTargets,w,h,vb,RED+'60',3);
   sovietBases.forEach(b=>{
@@ -510,7 +518,7 @@ function buildBG_Soviet(ctx,w,h){
 }
 
 function buildBG_SAC(ctx,w,h){
-  const vb={x:geo(-115,0)[0],y:geo(0,52)[1],w:0.15,h:0.20};
+  const vb=panelVB.sac;
   drawMapRegion(ctx,w,h,'sac');
   const n=geoXY(-104.9,38.7);
   const nx=(n.x-vb.x)/vb.w*w,ny=(n.y-vb.y)/vb.h*h;
@@ -551,7 +559,7 @@ function buildBG_SAC(ctx,w,h){
 }
 
 function buildBG_Atlantic(ctx,w,h){
-  const vb={x:geo(-85,0)[0],y:geo(0,60)[1],w:0.22,h:0.38};
+  const vb=panelVB.atlantic;
   drawMapRegion(ctx,w,h,'atlantic');
   ctx.setLineDash([4,4]);
   [[[-75,50],[-50,55]],[[-70,45],[-45,50]],[[-65,40],[-40,45]],[[-75,50],[-70,45]],[[-70,45],[-65,40]]].forEach(([f,t])=>{
@@ -609,28 +617,25 @@ function drawAlaska(ctx,w,h){
   ctx.beginPath();ctx.moveTo(cx,cy);
   ctx.arc(cx,cy,Math.max(w,h),sa,sa+0.15);ctx.closePath();
   ctx.fillStyle='rgba(80,160,255,0.06)';ctx.fill();
-  const vb={x:geo(-175,0)[0],y:geo(0,72)[1],w:0.18,h:0.30};
-  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,vb,true);drawImpacts(ctx,w,h,vb);}
+  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,panelVB.alaska,true);drawImpacts(ctx,w,h,panelVB.alaska);}
 }
 
 function drawCONUS(ctx,w,h){
   ctx.clearRect(0,0,w,h);
   if(bgCanvases[1])ctx.drawImage(bgCanvases[1],0,0,w,h);
-  const vb={x:geo(-130,0)[0],y:geo(0,52)[1],w:0.22,h:0.32};
-  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,vb,true);drawImpacts(ctx,w,h,vb);}
+  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,panelVB.conus,true);drawImpacts(ctx,w,h,panelVB.conus);}
 }
 
 function drawSoviet(ctx,w,h){
   ctx.clearRect(0,0,w,h);
   if(bgCanvases[2])ctx.drawImage(bgCanvases[2],0,0,w,h);
-  const vb={x:geo(20,0)[0],y:geo(0,75)[1],w:0.42,h:0.50};
-  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,vb,true);drawImpacts(ctx,w,h,vb);}
+  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,panelVB.soviet,true);drawImpacts(ctx,w,h,panelVB.soviet);}
 }
 
 function drawSAC(ctx,w,h){
   ctx.clearRect(0,0,w,h);
   if(bgCanvases[3])ctx.drawImage(bgCanvases[3],0,0,w,h);
-  const vb={x:geo(-115,0)[0],y:geo(0,52)[1],w:0.15,h:0.20};
+  const vb=panelVB.sac;
   if(currentDefcon<=2){
     const el=(Date.now()-warStartTime)/1000;
     sacBases.forEach(b=>{
@@ -651,8 +656,7 @@ function drawSAC(ctx,w,h){
 function drawAtlantic(ctx,w,h){
   ctx.clearRect(0,0,w,h);
   if(bgCanvases[4])ctx.drawImage(bgCanvases[4],0,0,w,h);
-  const vb={x:geo(-85,0)[0],y:geo(0,60)[1],w:0.22,h:0.38};
-  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,vb,false);drawImpacts(ctx,w,h,vb);}
+  if(currentDefcon<=3){drawMissilesBatched(ctx,w,h,panelVB.atlantic,false);drawImpacts(ctx,w,h,panelVB.atlantic);}
 }
 
 function drawGlobal(ctx,w,h){
