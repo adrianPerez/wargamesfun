@@ -148,7 +148,9 @@ function loadMaps(){
 // SVG viewBox: 30.767, 241.591, 784.077, 458.627
 const SVB={x:30.767,y:241.591,w:784.077,h:458.627};
 
-function geo(lon,lat){return[(lon+170)/370,(78-lat)/100];}
+// Projection calibrated to match SVG map (31 country centroids, cubic lat fit)
+const GX=0.0030286746,GXB=0.4783456,GY3=-3.60798e-7,GY2=2.03949e-5,GY1=-0.0060070,GY0=0.6300874;
+function geo(lon,lat){return[GX*lon+GXB,((GY3*lat+GY2)*lat+GY1)*lat+GY0];}
 function geoXY(lon,lat){const c=geo(lon,lat);return{x:c[0],y:c[1]};}
 function hexToRgba(hex,a){
   const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -201,13 +203,13 @@ const sacBases=[
 ];
 
 // ── PANEL VIEWPORTS (lon/lat bounds → geo coords & SVG crop rects) ──
-// Geo viewboxes for missiles/targets/bases
+// Widths/heights auto-computed from geo() to match SVG projection
 const panelVB={
-  alaska:  {x:geo(-175,0)[0],y:geo(0,73)[1],w:(45)/370,h:(21)/100},
-  conus:   {x:geo(-130,0)[0],y:geo(0,52)[1],w:(70)/370,h:(30)/100},
-  soviet:  {x:geo(15,0)[0],y:geo(0,76)[1],w:(160)/370,h:(46)/100},
-  sac:     {x:geo(-115,0)[0],y:geo(0,52)[1],w:(33)/370,h:(24)/100},
-  atlantic:{x:geo(-85,0)[0],y:geo(0,68)[1],w:(90)/370,h:(38)/100},
+  alaska:  {x:geo(-175,0)[0],y:geo(0,73)[1],w:geo(-130,0)[0]-geo(-175,0)[0],h:geo(0,52)[1]-geo(0,73)[1]},
+  conus:   {x:geo(-130,0)[0],y:geo(0,52)[1],w:geo(-60,0)[0]-geo(-130,0)[0],h:geo(0,22)[1]-geo(0,52)[1]},
+  soviet:  {x:geo(15,0)[0],y:geo(0,76)[1],w:geo(175,0)[0]-geo(15,0)[0],h:geo(0,30)[1]-geo(0,76)[1]},
+  sac:     {x:geo(-115,0)[0],y:geo(0,52)[1],w:geo(-82,0)[0]-geo(-115,0)[0],h:geo(0,28)[1]-geo(0,52)[1]},
+  atlantic:{x:geo(-85,0)[0],y:geo(0,68)[1],w:geo(5,0)[0]-geo(-85,0)[0],h:geo(0,30)[1]-geo(0,68)[1]},
 };
 // SVG crop rects derived from geo viewboxes: svg = SVB.origin + geo * SVB.size
 function geoToSvgCrop(vb){
