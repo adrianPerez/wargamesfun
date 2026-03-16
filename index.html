@@ -200,23 +200,26 @@ const sacBases=[
   {name:"BARKSDALE",lbl:"2ND BOMB\nWING",...geoXY(-93.7,32.5)},
 ];
 
-// ── SVG MAP CROP RECTS (in SVG coordinate space) ──
-// Calibrated from country bounding boxes via svgpathtools
-const mapCrops={
-  alaska:  {x:6,y:310,w:104,h:66},      // lon -175 to -130, lat 52-73
-  conus:   {x:110,y:377,w:161,h:95},     // lon -130 to -60, lat 22-52
-  soviet:  {x:443,y:301,w:368,h:145},    // lon 15 to 175, lat 30-76
-  sac:     {x:144,y:377,w:76,h:76},      // lon -115 to -82, lat 28-52
-  atlantic:{x:213,y:326,w:207,h:120},    // lon -85 to 5, lat 30-68
-  global:  {x:SVB.x,y:SVB.y,w:SVB.w,h:SVB.h},
-};
-// Geo viewboxes matching the crop rects (for missiles/targets/bases)
+// ── PANEL VIEWPORTS (lon/lat bounds → geo coords & SVG crop rects) ──
+// Geo viewboxes for missiles/targets/bases
 const panelVB={
-  alaska:  {x:geo(-175,0)[0],y:geo(0,73)[1],w:0.1216,h:0.2100},
-  conus:   {x:geo(-130,0)[0],y:geo(0,52)[1],w:0.1892,h:0.3000},
-  soviet:  {x:geo(15,0)[0],y:geo(0,76)[1],w:0.4324,h:0.4600},
-  sac:     {x:geo(-115,0)[0],y:geo(0,52)[1],w:0.0892,h:0.2400},
-  atlantic:{x:geo(-85,0)[0],y:geo(0,68)[1],w:0.2432,h:0.3800},
+  alaska:  {x:geo(-175,0)[0],y:geo(0,73)[1],w:(45)/370,h:(21)/100},
+  conus:   {x:geo(-130,0)[0],y:geo(0,52)[1],w:(70)/370,h:(30)/100},
+  soviet:  {x:geo(15,0)[0],y:geo(0,76)[1],w:(160)/370,h:(46)/100},
+  sac:     {x:geo(-115,0)[0],y:geo(0,52)[1],w:(33)/370,h:(24)/100},
+  atlantic:{x:geo(-85,0)[0],y:geo(0,68)[1],w:(90)/370,h:(38)/100},
+};
+// SVG crop rects derived from geo viewboxes: svg = SVB.origin + geo * SVB.size
+function geoToSvgCrop(vb){
+  return{x:SVB.x+vb.x*SVB.w, y:SVB.y+vb.y*SVB.h, w:vb.w*SVB.w, h:vb.h*SVB.h};
+}
+const mapCrops={
+  alaska:  geoToSvgCrop(panelVB.alaska),
+  conus:   geoToSvgCrop(panelVB.conus),
+  soviet:  geoToSvgCrop(panelVB.soviet),
+  sac:     geoToSvgCrop(panelVB.sac),
+  atlantic:geoToSvgCrop(panelVB.atlantic),
+  global:  {x:SVB.x,y:SVB.y,w:SVB.w,h:SVB.h},
 };
 
 // ── MISSILE ──
