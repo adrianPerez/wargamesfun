@@ -110,6 +110,7 @@
     <span class="sbl" style="margin-left:6px">CLEAR</span><span class="sbk" style="background:#224488"></span>
     <span class="sbl">TABLE</span><span class="sbk" style="background:#224488"></span>
     <span class="sbl">PAUSE</span><span class="sbk" style="background:#224488"></span>
+    <button class="defcon-btn" onclick="toggleTTT()" id="play-btn">▶ PLAY</button>
     <div class="cg"><span class="cl">DSL</span><span class="cv" id="ct0">3252</span></div>
     <div class="cg"><span class="cl">DEL</span><span class="cv" id="ct1">3416</span></div>
     <div class="cg"><span class="cl">PAC</span><span class="cv" id="ct2">5417</span></div>
@@ -118,7 +119,7 @@
     <div class="cg"><span class="cl">IMPACT</span><span class="cv" id="ct5" style="color:#ff6688">0</span></div>
   </div>
   <div class="panel"><span class="panel-label">SAC FORCE STATUS<br><span class="sub">STRATEGIC AIR COMMAND</span></span><canvas id="c3"></canvas></div>
-  <div class="panel"><span class="panel-label">NORTH ATLANTIC DEFENSE<br><span class="sub">ADIZ SECTORS</span></span><canvas id="c4"></canvas><div id="event-log"></div></div>
+  <div class="panel"><span class="panel-label" id="lbl4">NORTH ATLANTIC DEFENSE<br><span class="sub">ADIZ SECTORS</span></span><canvas id="c4"></canvas><div id="event-log"></div></div>
   <div class="panel"><span class="panel-label">GLOBAL STRATEGIC</span><canvas id="c5"></canvas></div>
 </div>
 <script>
@@ -706,6 +707,184 @@ function updateStatus(){
   }
 }
 
+// ── TIC TAC TOE ──
+let tttActive=false, tttBoard=Array(9).fill(0), tttTurn=1, tttWinner=0;
+let tttMoveTime=0, tttMoveDelay=400, tttGameOverTime=0, tttGames=0;
+let tttWins={x:0,o:0,d:0}, tttMoveHistory=[], tttWinLine=null;
+
+function toggleTTT(){
+  tttActive=!tttActive;
+  const btn=document.getElementById('play-btn');
+  const lbl=document.getElementById('lbl4');
+  if(tttActive){
+    btn.classList.add('active');btn.textContent='■ STOP';
+    lbl.innerHTML='A STRANGE GAME<br><span class="sub">THE ONLY WINNING MOVE IS NOT TO PLAY</span>';
+    tttReset();
+  } else {
+    btn.classList.remove('active');btn.textContent='▶ PLAY';
+    lbl.innerHTML='NORTH ATLANTIC DEFENSE<br><span class="sub">ADIZ SECTORS</span>';
+    buildBG(4,panelSizes[4].width*window.devicePixelRatio,panelSizes[4].height*window.devicePixelRatio,(ctx,w,h)=>{
+      ctx.scale(window.devicePixelRatio,window.devicePixelRatio);buildBG_Atlantic(ctx,panelSizes[4].width,panelSizes[4].height);
+    });
+  }
+}
+
+function tttReset(){
+  tttBoard=Array(9).fill(0);tttTurn=1;tttWinner=0;tttWinLine=null;
+  tttMoveHistory=[];tttMoveTime=Date.now()+600;
+  tttMoveDelay=Math.max(150,400-tttGames*8);
+}
+
+function tttCheck(){
+  const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const w of wins){
+    if(tttBoard[w[0]]&&tttBoard[w[0]]===tttBoard[w[1]]&&tttBoard[w[1]]===tttBoard[w[2]]){
+      tttWinLine=w;return tttBoard[w[0]];
+    }
+  }
+  return tttBoard.includes(0)?0:3; // 3=draw
+}
+
+function tttAiMove(player){
+  const opp=player===1?2:1;
+  // Try to win
+  for(let i=0;i<9;i++){if(!tttBoard[i]){tttBoard[i]=player;if(tttCheck()===player){tttBoard[i]=0;return i;}tttBoard[i]=0;}}
+  // Block opponent win
+  for(let i=0;i<9;i++){if(!tttBoard[i]){tttBoard[i]=opp;if(tttCheck()===opp){tttBoard[i]=0;return i;}tttBoard[i]=0;}}
+  // Center, corners, edges
+  if(!tttBoard[4])return 4;
+  const corners=[0,2,6,8].filter(i=>!tttBoard[i]);
+  if(corners.length)return corners[Math.floor(Math.random()*corners.length)];
+  const edges=[1,3,5,7].filter(i=>!tttBoard[i]);
+  return edges[Math.floor(Math.random()*edges.length)];
+}
+
+function tttUpdate(){
+  const now=Date.now();
+  if(tttWinner){
+    if(now-tttGameOverTime>1200){tttGames++;tttReset();}
+    return;
+  }
+  if(now<tttMoveTime)return;
+  // Make a move — alternate between smart and random to create variety
+  let move;
+  if(Math.random()<0.4){
+    const empty=[];for(let i=0;i<9;i++)if(!tttBoard[i])empty.push(i);
+    move=empty[Math.floor(Math.random()*empty.length)];
+  } else {
+    move=tttAiMove(tttTurn);
+  }
+  if(move===undefined)return;
+  tttBoard[move]=tttTurn;
+  tttMoveHistory.push({cell:move,player:tttTurn,time:now});
+  tttTurn=tttTurn===1?2:1;
+  tttMoveTime=now+tttMoveDelay;
+  const result=tttCheck();
+  if(result){
+    tttWinner=result;tttGameOverTime=now;
+    if(result===1)tttWins.x++;else if(result===2)tttWins.o++;else tttWins.d++;
+  }
+}
+
+function drawTTT(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#000010';ctx.fillRect(0,0,w,h);
+  tttUpdate();
+
+  const sz=Math.min(w,h)*0.6;
+  const ox=(w-sz)/2, oy=(h-sz)*0.45;
+  const cs=sz/3;
+
+  // Draw grid with glow
+  ctx.lineWidth=2;
+  for(let i=1;i<3;i++){
+    const x=ox+i*cs, y=oy+i*cs;
+    ctx.strokeStyle=hexToRgba(BLUE_D,0.3);ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(x,oy);ctx.lineTo(x,oy+sz);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+sz,y);ctx.stroke();
+    ctx.strokeStyle=hexToRgba(BLUE,0.7);ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x,oy);ctx.lineTo(x,oy+sz);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+sz,y);ctx.stroke();
+  }
+
+  // Draw pieces
+  for(let i=0;i<9;i++){
+    if(!tttBoard[i])continue;
+    const col=Math.floor(i%3),row=Math.floor(i/3);
+    const cx=ox+col*cs+cs/2, cy=oy+row*cs+cs/2;
+    const pr=cs*0.3;
+    const moveEntry=tttMoveHistory.find(m=>m.cell===i);
+    const age=moveEntry?Date.now()-moveEntry.time:9999;
+    const scale=Math.min(1,age/150);
+    const flash=Math.max(0,1-age/300);
+
+    if(tttBoard[i]===1){ // X — cyan/blue
+      const s=pr*scale;
+      // Glow
+      ctx.strokeStyle=hexToRgba(CYAN,0.15+flash*0.3);ctx.lineWidth=8;
+      ctx.beginPath();ctx.moveTo(cx-s,cy-s);ctx.lineTo(cx+s,cy+s);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx+s,cy-s);ctx.lineTo(cx-s,cy+s);ctx.stroke();
+      // Core
+      ctx.strokeStyle=hexToRgba(CYAN,0.85+flash*0.15);ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(cx-s,cy-s);ctx.lineTo(cx+s,cy+s);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx+s,cy-s);ctx.lineTo(cx-s,cy+s);ctx.stroke();
+      if(flash>0){
+        const g=ctx.createRadialGradient(cx,cy,0,cx,cy,pr*1.5);
+        g.addColorStop(0,hexToRgba(CYAN,flash*0.3));g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=g;ctx.fillRect(cx-pr*1.5,cy-pr*1.5,pr*3,pr*3);
+      }
+    } else { // O — red
+      const r=pr*scale;
+      // Glow
+      ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle=hexToRgba(RED,0.15+flash*0.3);ctx.lineWidth=8;ctx.stroke();
+      // Core
+      ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle=hexToRgba(RED,0.85+flash*0.15);ctx.lineWidth=2.5;ctx.stroke();
+      if(flash>0){
+        const g=ctx.createRadialGradient(cx,cy,0,cx,cy,pr*1.5);
+        g.addColorStop(0,hexToRgba(RED,flash*0.3));g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=g;ctx.fillRect(cx-pr*1.5,cy-pr*1.5,pr*3,pr*3);
+      }
+    }
+  }
+
+  // Win line glow
+  if(tttWinLine&&tttWinner<3){
+    const pulse=0.6+0.4*Math.sin(Date.now()/200);
+    const col=tttWinner===1?CYAN:RED;
+    const [a,b,c]=tttWinLine;
+    const ax=ox+(a%3)*cs+cs/2,ay=oy+Math.floor(a/3)*cs+cs/2;
+    const cx2=ox+(c%3)*cs+cs/2,cy2=oy+Math.floor(c/3)*cs+cs/2;
+    ctx.strokeStyle=hexToRgba(col,0.2*pulse);ctx.lineWidth=12;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(cx2,cy2);ctx.stroke();
+    ctx.strokeStyle=hexToRgba(col,0.8*pulse);ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(cx2,cy2);ctx.stroke();
+  }
+
+  // Scoreboard
+  ctx.font=`${Math.max(9,w*0.028)}px 'Share Tech Mono',monospace`;
+  const sy=oy+sz+Math.max(18,h*0.06);
+  ctx.fillStyle=hexToRgba(BLUE_D,0.15);ctx.fillText(`GAME ${tttGames+1}`,ox,sy);
+  ctx.fillStyle=hexToRgba(BLUE,0.6);ctx.fillText(`GAME ${tttGames+1}`,ox,sy);
+
+  const sc=`X:${tttWins.x}  O:${tttWins.o}  DRAW:${tttWins.d}`;
+  ctx.fillStyle=hexToRgba(BLUE_D,0.15);ctx.fillText(sc,ox+sz-ctx.measureText(sc).width,sy);
+  ctx.fillStyle=hexToRgba(BLUE,0.6);ctx.fillText(sc,ox+sz-ctx.measureText(sc).width,sy);
+
+  // Winner text
+  if(tttWinner){
+    const pulse=0.7+0.3*Math.sin(Date.now()/150);
+    const txt=tttWinner===3?'DRAW':tttWinner===1?'X WINS':'O WINS';
+    ctx.font=`${Math.max(14,w*0.06)}px 'Share Tech Mono',monospace`;
+    const tw=ctx.measureText(txt).width;
+    const tx=(w-tw)/2, ty=oy+sz+Math.max(40,h*0.14);
+    const col=tttWinner===1?CYAN:tttWinner===2?RED:BLUE;
+    ctx.fillStyle=hexToRgba(col,0.15*pulse);ctx.fillText(txt,tx,ty-1);ctx.fillText(txt,tx,ty+1);
+    ctx.fillStyle=hexToRgba(col,0.9*pulse);ctx.fillText(txt,tx,ty);
+  }
+}
+
 // ── MAIN LOOP ──
 function loop(){
   launchMissile();
@@ -721,7 +900,8 @@ function loop(){
   drawCONUS(cvs[1].x,panelSizes[1].width,panelSizes[1].height);
   drawSoviet(cvs[2].x,panelSizes[2].width,panelSizes[2].height);
   drawSAC(cvs[3].x,panelSizes[3].width,panelSizes[3].height);
-  drawAtlantic(cvs[4].x,panelSizes[4].width,panelSizes[4].height);
+  if(tttActive) drawTTT(cvs[4].x,panelSizes[4].width,panelSizes[4].height);
+  else drawAtlantic(cvs[4].x,panelSizes[4].width,panelSizes[4].height);
   drawGlobal(cvs[5].x,panelSizes[5].width,panelSizes[5].height);
   updateStatus();renderLog();
   requestAnimationFrame(loop);
