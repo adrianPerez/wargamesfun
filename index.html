@@ -298,32 +298,30 @@ function drawMissilesBatched(ctx,w,h,vb,bright){
       ctx.lineTo(fsx,fsy);
     }
 
-    // 3-pass glow stroke on combined path
-    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.12:0.06})`;
-    ctx.lineWidth=lw+3;ctx.stroke();
-    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.3:0.15})`;
-    ctx.lineWidth=lw+1.2;ctx.stroke();
-    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.8:0.5})`;
+    // 4-pass glow stroke on combined path
+    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.08:0.04})`;
+    ctx.lineWidth=lw+8;ctx.stroke();
+    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.18:0.1})`;
+    ctx.lineWidth=lw+4;ctx.stroke();
+    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.45:0.25})`;
+    ctx.lineWidth=lw+1.5;ctx.stroke();
+    ctx.strokeStyle=`rgba(${r},${g},${bl},${bright?0.95:0.7})`;
     ctx.lineWidth=lw;ctx.stroke();
 
-    // Leading dots — simple filled circles (no radial gradients for perf)
-    const dotSz=bright?2:1.2;
-    const useGrad=mc<80; // Only use gradients when missile count is low
+    // Leading dots with glow
+    const dotSz=bright?2.5:1.5;
+    const useGrad=mc<80;
     for(let mi=0;mi<ms.length;mi++){
       const m=ms[mi];
       if(m.done)continue;
       const fp=m.pos(m.progress);const[fsx,fsy]=ts(fp.x,fp.y);
-      if(useGrad){
-        const sz=bright?6:4;
-        const grad=ctx.createRadialGradient(fsx,fsy,0,fsx,fsy,sz);
-        grad.addColorStop(0,'rgba(238,238,255,0.9)');
-        grad.addColorStop(0.3,`rgba(${r},${g},${bl},0.5)`);
-        grad.addColorStop(1,`rgba(${r},${g},${bl},0)`);
-        ctx.fillStyle=grad;ctx.fillRect(fsx-sz,fsy-sz,sz*2,sz*2);
-      } else {
-        ctx.fillStyle=`rgba(238,238,255,0.85)`;
-        ctx.beginPath();ctx.arc(fsx,fsy,dotSz,0,Math.PI*2);ctx.fill();
-      }
+      const sz=bright?10:7;
+      const grad=ctx.createRadialGradient(fsx,fsy,0,fsx,fsy,sz);
+      grad.addColorStop(0,'rgba(255,255,255,0.95)');
+      grad.addColorStop(0.15,`rgba(${r},${g},${bl},0.8)`);
+      grad.addColorStop(0.5,`rgba(${r},${g},${bl},0.25)`);
+      grad.addColorStop(1,`rgba(${r},${g},${bl},0)`);
+      ctx.fillStyle=grad;ctx.fillRect(fsx-sz,fsy-sz,sz*2,sz*2);
     }
   }
   ctx.setLineDash([]);
@@ -342,18 +340,33 @@ function drawImpacts(ctx,w,h,vb){
     const r=imp._r,g=imp._g,b=imp._b;
     if(age<3000){
       const rad=Math.min(age/80,20),a=Math.max(0,1-age/3000);
-      ctx.beginPath();ctx.strokeStyle=`rgba(${r},${g},${b},${a*0.15})`;
-      ctx.lineWidth=5;ctx.arc(sx,sy,rad+2,0,Math.PI*2);ctx.stroke();
-      ctx.beginPath();ctx.strokeStyle=`rgba(${r},${g},${b},${a*0.85})`;
+      // Outer glow
+      const grd=ctx.createRadialGradient(sx,sy,rad*0.5,sx,sy,rad+10);
+      grd.addColorStop(0,`rgba(${r},${g},${b},${a*0.3})`);
+      grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.fillStyle=grd;ctx.fillRect(sx-rad-10,sy-rad-10,(rad+10)*2,(rad+10)*2);
+      // Ring glow (wide dim)
+      ctx.beginPath();ctx.strokeStyle=`rgba(${r},${g},${b},${a*0.25})`;
+      ctx.lineWidth=6;ctx.arc(sx,sy,rad+2,0,Math.PI*2);ctx.stroke();
+      // Ring core (bright)
+      ctx.beginPath();ctx.strokeStyle=`rgba(${r},${g},${b},${a*0.95})`;
       ctx.lineWidth=1.8;ctx.arc(sx,sy,rad,0,Math.PI*2);ctx.stroke();
-      if(age<400){
-        const fa=1-age/400;
-        ctx.fillStyle=`rgba(255,255,255,${fa*0.7})`;
-        ctx.beginPath();ctx.arc(sx,sy,4*fa+1,0,Math.PI*2);ctx.fill();
+      if(age<500){
+        const fa=1-age/500;
+        // Bright flash with glow
+        const fg=ctx.createRadialGradient(sx,sy,0,sx,sy,8*fa+3);
+        fg.addColorStop(0,`rgba(255,255,255,${fa*0.95})`);
+        fg.addColorStop(0.3,`rgba(${r},${g},${b},${fa*0.6})`);
+        fg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+        ctx.fillStyle=fg;ctx.fillRect(sx-12,sy-12,24,24);
       }
     }else{
-      ctx.fillStyle=`rgba(${r},${g},${b},0.15)`;
-      ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);ctx.fill();
+      // Persistent glow dot
+      const pg=ctx.createRadialGradient(sx,sy,0,sx,sy,6);
+      pg.addColorStop(0,`rgba(${r},${g},${b},0.3)`);
+      pg.addColorStop(0.5,`rgba(${r},${g},${b},0.1)`);
+      pg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.fillStyle=pg;ctx.fillRect(sx-6,sy-6,12,12);
     }
   });
 }
