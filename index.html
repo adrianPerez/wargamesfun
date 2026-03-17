@@ -731,8 +731,8 @@ function toggleTTT(){
 
 function tttReset(){
   tttBoard=Array(9).fill(0);tttTurn=1;tttWinner=0;tttWinLine=null;
-  tttMoveHistory=[];tttMoveTime=Date.now()+600;
-  tttMoveDelay=Math.max(150,400-tttGames*8);
+  tttMoveHistory=[];tttMoveTime=Date.now()+Math.max(150,600-tttGames*30);
+  tttMoveDelay=Math.max(35,400-tttGames*25);
 }
 
 function tttCheck(){
@@ -784,7 +784,7 @@ function tttCheckBoard(board){
 function tttUpdate(){
   const now=Date.now();
   if(tttWinner){
-    if(now-tttGameOverTime>1200){tttGames++;tttReset();}
+    if(now-tttGameOverTime>Math.max(300,1200-tttGames*60)){tttGames++;tttReset();}
     return;
   }
   if(now<tttMoveTime)return;
